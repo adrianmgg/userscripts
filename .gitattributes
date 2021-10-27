@@ -1,0 +1,9 @@
+# automatic EOL conversion for anything not explicitly set later in this file
+*               text=auto
+
+# text files
+*.js            text
+*.md            text
+.gitignore      text
+.gitattributes  text
+LICENSE         text
