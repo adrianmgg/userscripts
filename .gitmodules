@@ -1,0 +1,3 @@
+[submodule "picrew.me/picrew_landscape_layout"]
+	path = picrew.me/picrew_landscape_layout
+	url = git@github.com:adrianmgg/picrew_landscape_layout.git
