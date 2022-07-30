@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         cohost descriptive page titles
 // @namespace    https://github.com/adrianmgg
-// @version      1.0.0
+// @version      1.0.1
 // @description  adds descriptive, dynamically updating titles to cohost pages, replacing the default "cohost!" for everything
 // @author       amgg
 // @match        https://cohost.org
@@ -35,6 +35,7 @@ const rules = [
     [['pathname', '^/rc/content/markdown-reference/?$', 'markdown cheatsheet']],
     // [['pathname', '^/rc/welcome/?$', '']], // just gonna leave this one with the default "cohost!"
     [['pathname', '^/rc/signup/?$', 'sign up']],
+    [['pathname', '^/rc/project/edit/?$', 'edit profile']],
 ].map(rule => rule.map(([type, test, replacement]) => [type, new RegExp(test), replacement]) );
 function location_to_title(location) {
     for(const rule of rules) {
