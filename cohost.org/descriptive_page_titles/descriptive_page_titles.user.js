@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         cohost descriptive page titles
 // @namespace    https://github.com/adrianmgg
-// @version      1.0.1
+// @version      1.0.2
 // @description  adds descriptive, dynamically updating titles to cohost pages, replacing the default "cohost!" for everything
 // @author       amgg
 // @match        https://cohost.org
@@ -25,10 +25,10 @@ const rules = [
     [['pathname', '^/rc/project/followers/?$', 'followers']],
     [['pathname', '^/[^/]+/follow-requests/?$', 'follow requests']],
     [['pathname', '^/rc/user/settings/?$', 'settings']],
+    [['pathname', '^/[^/]+/post/compose/?$', 'compose post']], // cohost does actually already have a different title for this one, "cohost - go ahead, make a post"
     // readyState can be as early as `loading` in func, might need to let these be promises rather than executing immediately
     // TODO this gives "$display_name on cohost" for posts without titles, maybe do something else for that case?
     [['pathname', '^/[^/]+/post/[^/]+/?', () => document.head.querySelector('meta[property="og:title"]').content ]],
-    [['pathname', '^/[^/]+/post/compose/?$', 'compose post']], // cohost does actually already have a different title for this one, "cohost - go ahead, make a post"
     [['pathname', '^/rc/content/tos/?$', 'terms of use']],
     [['pathname', '^/rc/content/privacy/?$', 'privacy notice']],
     [['pathname', '^/rc/content/community-guidelines/?$', 'community guidelines']],
