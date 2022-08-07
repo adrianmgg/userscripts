@@ -1,14 +1,12 @@
 // ==UserScript==
 // @name         cohost view post source
 // @namespace    https://github.com/adrianmgg
-// @version      1.0.0
+// @version      1.0.1
 // @description  adds a "view source" button to posts on cohost
 // @author       amgg
-// @match        https://cohost.org
 // @match        https://cohost.org/*
 // @icon         https://cohost.org/static/a4f72033a674e35d4cc9.png
 // @grant        unsafeWindow
-// @grant        GM_addStyle
 // @run-at       document-start
 // @compatible   firefox
 // @compatible   chrome
@@ -66,7 +64,10 @@ function observer_helper_promise(target, filter, options) {
 
 // ======== css stuff ========
 
-GM_addStyle(`
+window.addEventListener('DOMContentLoaded', e => {
+    create('style', {
+        parent: document.head,
+        textContent: `
 .amgg__viewsource__wrap-text .amgg__viewsource__source-view-container pre {
     white-space: pre-wrap;
     word-break: normal;
@@ -75,7 +76,9 @@ GM_addStyle(`
 .amgg__viewsource__post-hide-source-view .amgg__viewsource__source-view-container {
     display: none;
 }
-`);
+`,
+    });
+});
 
 // ========= ========
 
@@ -207,6 +210,9 @@ if(document.readyState === 'interactive') {
 //  had fully loaded, which would fail. because of that, i switched to waiting
 //  for the body to exist, since that should mean all the head nodes have been
 //  fully downloaded)
+document.addEventListener('amgg__viewsource__foundpost', (e) => {
+    handle_post_data(e.detail.post);
+});
 observer_helper_chain(
     (body) => {
         const dehydrated_state_elem = document.getElementById('trpc-dehydrated-state');
@@ -240,8 +246,27 @@ observer_helper_chain(
 
 // ======== handle posts that get loaded later ========
 
-const original_fetch = unsafeWindow.fetch;
-unsafeWindow.fetch = function(resource, options) {
+// originally i was just getting the original functions from unsafeWindow,
+// wrapping them, and replacing them, but that doesn't seem to work on
+// greasemonkey, where the site's code errors out trying to call the wrapped
+// function (i guess they do their sandboxing differently from tampermonkey &
+// violentmonkey? idk). I don't actually need any privelaged usersript
+// functions, so in theory i could `@grant none` and just not run sandboxed, but
+// as far as i can tell the problem *still* happens on greasemonkey even then.
+// doing it this way with events seems to work everywhere through, so that's
+// what i'll go with
+unsafeWindow.eval(`
+(() => {
+function return_post_to_sandbox(post) {
+    document.dispatchEvent(new CustomEvent('amgg__viewsource__foundpost', {
+        detail: {
+            post: post,
+        },
+    }));
+}
+
+const original_fetch = window.fetch;
+window.fetch = function(resource, options) {
     if(resource?.constructor === String) {
         try {
             const url = new URL(resource, window.location.href);
@@ -255,7 +280,7 @@ unsafeWindow.fetch = function(resource, options) {
                         for(const i in requested_things) {
                             // for posts viewed on user profiles
                             if(requested_things[i] === 'posts.byProject') {
-                                json[i].result.data.posts.forEach(handle_post_data);
+                                json[i].result.data.posts.forEach(return_post_to_sandbox);
                             }
                         }
                         resolve(response);
@@ -269,14 +294,16 @@ unsafeWindow.fetch = function(resource, options) {
     return original_fetch.apply(this, arguments);
 }
 
-const original_EventSource = unsafeWindow.EventSource;
-unsafeWindow.EventSource = function(...args) {
+const original_EventSource = window.EventSource;
+window.EventSource = function(...args) {
     const ret = new original_EventSource(...args);
     if(ret.url === 'https://cohost.org/rc/dashboard/event-stream') {
         ret.addEventListener('message', (e) => {
             const data = JSON.parse(e.data);
-            data.add.forEach(handle_post_data);
+            data.add.forEach(return_post_to_sandbox);
         });
     }
     return ret;
 };
+})();
+`);
