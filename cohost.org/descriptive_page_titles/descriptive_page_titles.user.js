@@ -1,10 +1,9 @@
 // ==UserScript==
 // @name         cohost descriptive page titles
 // @namespace    https://github.com/adrianmgg
-// @version      1.0.3
+// @version      1.0.4
 // @description  adds descriptive, dynamically updating titles to cohost pages, replacing the default "cohost!" for everything
 // @author       amgg
-// @match        https://cohost.org
 // @match        https://cohost.org/*
 // @icon         https://cohost.org/static/a4f72033a674e35d4cc9.png
 // @grant        unsafeWindow
