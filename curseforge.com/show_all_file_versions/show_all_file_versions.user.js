@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         show all file version tags
+// @name         curseforge show all file versions
 // @namespace    https://github.com/adrianmgg
 // @version      1.0.0
 // @description  show all the versions listed for a file, rather than hiding them behind a +2 thing you need to hover over
