@@ -9,27 +9,17 @@ shows all the versions listed for a file, rather than hiding them behind a +2 th
 
 changes this:
 
-<table>
-<thead><tr><th>Uploaded</th><th>Game Version</th><th>Downloads</th></tr></thead>
-<tbody>
-  <tr><td>2 hours ago</td><td>1.19.2 (+2)</td><td>492</td></tr>
-  <tr><td>2 hours ago</td><td>1.19.2 (+2)</td><td>112</td></tr>
-</tbody>
-</table>
+| Uploaded | Game Version | Downloads |
+| -------- | ------------ | --------- |
+| 2 hours ago | 1.19.2 (+2) | 492 |
+| 2 hours ago | 1.19.2 (+2) | 112 |
 
 to this:
 
-<table>
-<thead><tr><th>Uploaded</th><th>Game Version</th><th>Downloads</th></tr></thead>
-<tbody>
-  <tr><td rowspan="3">2 hours ago</td><td>1.19.2</td><td rowspan="3">492</td></tr>
-  <tr><td>Java 17</td></tr>
-  <tr><td>Forge</td></tr>
-  <tr><td rowspan="3">2 hours ago</td><td>1.19.2</td><td rowspan="3">112</td></tr>
-  <tr><td>Java 17</td></tr>
-  <tr><td>Fabric</td></tr>
-</tbody>
-</table>
+| Uploaded | Game Version | Downloads |
+| -------- | ------------ | --------- |
+| 2 hours ago | 1.19.2<br/>Java 17<br/>Forge | 492 |
+| 2 hours ago | 1.19.2<br/>Java 17<br/>Fabric | 112 |
 
 # compatibility
 
