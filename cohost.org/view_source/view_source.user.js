@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         cohost view post source
 // @namespace    https://github.com/adrianmgg
-// @version      1.0.1
+// @version      1.0.2
 // @description  adds a "view source" button to posts on cohost
 // @author       amgg
 // @match        https://cohost.org/*
@@ -136,6 +136,9 @@ function handle_show_post_source_click(article, view_source_btn, post_id) {
 let post_id_to_post_data = {};
 function handle_post_data(post) {
     post_id_to_post_data[post.postId] = post;
+    if(post.transparentShareOfPostId !== undefined) {
+        post_id_to_post_data[post.transparentShareOfPostId] = post;
+    }
 }
 
 // ======== watching for new post elements ========
