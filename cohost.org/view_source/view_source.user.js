@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         cohost view post source
 // @namespace    https://github.com/adrianmgg
-// @version      1.0.2
+// @version      1.0.3
 // @description  adds a "view source" button to posts on cohost
 // @author       amgg
 // @match        https://cohost.org/*
@@ -282,7 +282,7 @@ window.fetch = function(resource, options) {
                         const json = await response.clone().json();
                         for(const i in requested_things) {
                             // for posts viewed on user profiles
-                            if(requested_things[i] === 'posts.byProject') {
+                            if(requested_things[i] === 'posts.byProject' || requested_things[i] === 'posts.profilePosts') {
                                 json[i].result.data.posts.forEach(return_post_to_sandbox);
                             }
                         }
