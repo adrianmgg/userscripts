@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         cohost view post source
 // @namespace    https://github.com/adrianmgg
-// @version      1.0.3
+// @version      1.0.4
 // @description  adds a "view source" button to posts on cohost
 // @author       amgg
 // @match        https://cohost.org/*
@@ -59,6 +59,15 @@ function observer_helper_promise(target, filter, options) {
     return new Promise((resolve) => {
         observer_helper(filter, resolve, {...options, once: true})(target);
     });
+}
+// =============================================================================
+function arrayEqualsStrict(a, b) {
+    if(a === b) return true;
+    if(a.length !== b.length) return false;
+    for(let i = 0; i < a.length; i++) {
+        if(a[i] !== b[i]) return false;
+    }
+    return true;
 }
 // =============================================================================
 
@@ -222,12 +231,16 @@ observer_helper_chain(
         if(dehydrated_state_elem !== null) {
             const dehydrated_state = JSON.parse(dehydrated_state_elem.textContent);
             for(const query of dehydrated_state.queries) {
-                if(query.queryKey?.[0] === 'posts.byProject') {
-                    // posts on someone's profile
-                    query.state.data.posts.forEach(handle_post_data);
-                } else if(query.queryKey?.[0] === 'posts.singlePost') {
-                    // viewing a single post
-                    handle_post_data(query.state.data.post);
+                if(Array.isArray(query.queryKey) && Array.isArray(query.queryKey[0])) {
+                    const queryPath = query.queryKey[0];
+                    // TODO: does posts.byProject show up anywhere anymore? leaving it in for now just in case
+                    if(arrayEqualsStrict(queryPath, ['posts', 'byProject']) || arrayEqualsStrict(queryPath, ['posts', 'profilePosts'])) {
+                        // posts on someone's profile
+                        query.state.data.posts.forEach(handle_post_data);
+                    } else if(arrayEqualsStrict(queryPath, ['posts', 'singlePost'])) {
+                        // viewing a single post
+                        handle_post_data(query.state.data.post);
+                    }
                 }
             }
         }
