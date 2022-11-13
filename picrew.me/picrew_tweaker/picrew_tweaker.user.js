@@ -7,14 +7,22 @@
 // @match        https://picrew.me/image_maker/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=picrew.me
 // @run-at       document-start
-// @grant        none
+// @grant        unsafeWindow
 // ==/UserScript==
 
 (function() {
     'use strict';
 
+    // not all userscript managers have unsafeWindow
+    const _unsafeWindow = unsafeWindow || window;
+    // https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/Sharing_objects_with_page_scripts#sharing_content_script_objects_with_page_scripts
+    const _exportFunctionToUnsafeWindow = (() => {
+        if(exportFunction) return (func) => exportFunction(func, _unsafeWindow);
+        else               return (func) => func;
+    })();
+
     // apply our modifications to the parts list
-    function patchPList(pList) {
+    const patchPList = _exportFunctionToUnsafeWindow(function patchPList(pList) {
         try {
             pList.forEach(p=>{
                 // i think various *Cnt attrs have max of 99 via editor? maybe
@@ -72,9 +80,9 @@
         } catch(err) {
             console.error('error patchcing pList', err);
         }
-    }
+    });
 
-    function patchNuxt(nuxt) {
+    const patchNuxt = _exportFunctionToUnsafeWindow(function patchNuxt(nuxt) {
         try {
             // enable randomizing
             nuxt.state.imageMakerInfo.can_randomize = 1;
@@ -83,19 +91,21 @@
         } catch(err) {
             console.log('error patching nuxt', err);
         }
-    }
+    });
 
-    if('__NUXT__' in window) {
-        patchNuxt(window.__NUXT__);
+    if('__NUXT__' in _unsafeWindow) {
+        console.log('patching existing __NUXT__')
+        patchNuxt(_unsafeWindow.__NUXT__);
     } else {
+        console.log('no __NUXT__ yet, patching via defineProperty');
         let nuxt = undefined;
-        Object.defineProperty(window, '__NUXT__', {
-            get: () => nuxt,
-            set: (v) => {
+        Object.defineProperty(_unsafeWindow, '__NUXT__', {
+            get: _exportFunctionToUnsafeWindow(() => nuxt),
+            set: _exportFunctionToUnsafeWindow((v) => {
                 nuxt = v;
                 patchNuxt(nuxt);
                 return nuxt;
-            },
+            }),
         });
     }
 })();
