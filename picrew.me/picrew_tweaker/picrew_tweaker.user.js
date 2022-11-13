@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         picrew tweaker
 // @namespace    https://github.com/adrianmgg
-// @version      1.0.0
+// @version      1.0.1
 // @description  force-enables various picrew features
 // @author       amgg
 // @match        https://picrew.me/image_maker/*
@@ -74,117 +74,28 @@
         }
     }
 
-    // ==================
-    //  vue nuxt patches
-    // ==================
-    {
-        // this doesn't work if the nuxt element has already loaded/been processed so if that's the case we need to just try again.
-        if('__NUXT__' in unsafeWindow) {
-            window.location.reload();
+    function patchNuxt(nuxt) {
+        try {
+            // enable randomizing
+            nuxt.state.imageMakerInfo.can_randomize = 1;
+            nuxt.state.imageMakerInfo.can_fixed_randomize = 1;
+            patchPList(nuxt?.state?.config?.pList);
+        } catch(err) {
+            console.log('error patching nuxt', err);
         }
+    }
+
+    if('__NUXT__' in unsafeWindow) {
+        patchNuxt(unsafeWindow.__NUXT__);
+    } else {
         let nuxt = undefined;
         Object.defineProperty(unsafeWindow, '__NUXT__', {
             get: () => nuxt,
             set: (v) => {
                 nuxt = v;
-                // console.log('patching __NUXT__');
-                try {
-                    // enable randomizing
-                    nuxt.state.imageMakerInfo.can_randomize = 1;
-                    nuxt.state.imageMakerInfo.can_fixed_randomize = 1;
-                    patchPList(nuxt?.state?.config?.pList);
-                } catch(err) {
-                    console.log('error patching __NUXT__', err);
-                }
+                patchNuxt(nuxt);
                 return nuxt;
             },
         });
     }
-
-
-    // ==========================
-    //  patches to fetched files
-    // ==========================
-    // as far as I can tell the fetches this targeted aren't used anymore, but i'm leaving it here for now just in case they switch back
-    // {
-    //     const original_fetch = unsafeWindow.fetch;
-    //     let cf_resolve = null;
-    //     const cf_await = new Promise((resolve)=>{ cf_resolve=resolve; });
-    //     let patched_imgs_resolve = null;
-    //     const patched_imgs_await = new Promise((resolve)=>{ patched_imgs_resolve=resolve; });
-    //     unsafeWindow.fetch = function(resource, init) {
-    //         // if(resource.endsWith('img.json')) {
-    //         //     console.log('fetch img', resource, init);
-    //         //     return original_fetch.apply(this, arguments).then(async (response)=>{
-    //         //         response.json = async function() {
-    //         //             const data = await Response.prototype.json.apply(this, arguments);
-    //         //             console.log('rewriting img.json');
-    //         //             // setup dummy x2 urls for items without them, to avoid crash zooming above 1x
-    //         //             const patched_imgs = {};
-    //         //             for(const item_id in data.lst) {
-    //         //                 for(const layer_id in data.lst[item_id]) {
-    //         //                     for(const color_id in data.lst[item_id][layer_id]) {
-    //         //                         const img_entry = data.lst[item_id][layer_id][color_id];
-    //         //                         if(img_entry.x2Url === undefined) {
-    //         //                             patched_imgs[item_id] ??= {};
-    //         //                             patched_imgs[item_id][layer_id] ??= {};
-    //         //                             patched_imgs[item_id][layer_id][color_id] = true;
-    //         //                             const url = img_entry.url;
-    //         //                             img_entry.url = url.replace(/^(\/app\/image_maker\/\d+\/\d+\/)i_(.*\.png)$/, '$1ih_$2');
-    //         //                             img_entry.x2Url = url;
-    //         //                         }
-    //         //                     }
-    //         //                 }
-    //         //             }
-    //         //             console.log('rewritten img', data);
-    //         //             patched_imgs_resolve(patched_imgs);
-    //         //             return data;
-    //         //         };
-    //         //         return response;
-    //         //     });
-    //         // }
-    //         if(resource.endsWith('/cf.json')) {
-    //             // console.log('fetch cf', resource, init);
-    //             return original_fetch.apply(this, arguments).then(async (response)=>{
-    //                 response.json = async function() {
-    //                     const data = await Response.prototype.json.apply(this, arguments);
-    //                     // console.log('rewriting cf.json');
-    //                     try {
-    //                         // const patched_imgs = await patched_imgs_await;
-    //                         patchPList(data.pList);
-    //                     } catch(e) {
-    //                         console.error('error while rewriting cf', e);
-    //                         alert('error while rewriting cf, see console');
-    //                     }
-    //                     console.log('rewritten cf', data);
-    //                     cf_resolve(data);
-    //                     return data;
-    //                 };
-    //                 return response;
-    //             });
-    //         }
-    //         // else if(resource.endsWith('/i_rule.json')) { // TODO do proper url parse rather than just endswith
-    //         //     console.log('fetch i_rule', resource, init);
-    //         //     return original_fetch.apply(this, arguments).then(async (response)=>{
-    //         //         response.json = async function() {
-    //         //             console.log('rewriting i_rule.json');
-    //         //             // const data = await Response.prototype.json.apply(this, arguments);
-    //         //             const data = {};
-    //         //             console.log('awaiting cf');
-    //         //             const cf = await cf_await;
-    //         //             console.log('got cf');
-    //         //             // for(const plentry of cf.pList) {
-    //         //             //     for(const item of plentry) {
-    //         //             //         data[item.itmId] = {};
-    //         //             //     }
-    //         //             // }
-    //         //             console.log('rewritten i_rule', data);
-    //         //             return data;
-    //         //         };
-    //         //         return response;
-    //         //     });
-    //         // }
-    //         return original_fetch.apply(this, arguments);
-    //     };
-    // }
 })();
