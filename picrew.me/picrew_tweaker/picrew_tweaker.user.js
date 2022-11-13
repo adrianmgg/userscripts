@@ -1,13 +1,13 @@
 // ==UserScript==
 // @name         picrew tweaker
 // @namespace    https://github.com/adrianmgg
-// @version      1.0.1
+// @version      1.0.2
 // @description  force-enables various picrew features
 // @author       amgg
 // @match        https://picrew.me/image_maker/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=picrew.me
 // @run-at       document-start
-// @grant        unsafeWindow
+// @grant        none
 // ==/UserScript==
 
 (function() {
@@ -85,11 +85,11 @@
         }
     }
 
-    if('__NUXT__' in unsafeWindow) {
-        patchNuxt(unsafeWindow.__NUXT__);
+    if('__NUXT__' in window) {
+        patchNuxt(window.__NUXT__);
     } else {
         let nuxt = undefined;
-        Object.defineProperty(unsafeWindow, '__NUXT__', {
+        Object.defineProperty(window, '__NUXT__', {
             get: () => nuxt,
             set: (v) => {
                 nuxt = v;

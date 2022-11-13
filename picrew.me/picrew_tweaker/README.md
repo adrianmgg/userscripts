@@ -12,6 +12,7 @@ compatibility
 | firefox | tampermonkey       | yes    |
 | firefox | violentmonkey      | yes    |
 | firefox | greasemonkey       | no     |
+| iOS     | userscripts        | yes    |
 
 greasemonkey support probably coming eventually but for now it's broken
 
