@@ -4,3 +4,15 @@ force-enables various picrew features:
 - moving/rotating parts
 - disabling parts
 - randomizing
+
+compatibility
+| browser | userscript manager | works? |
+| ------- | ------------------ | ------ |
+| chrome  | tampermonkey       | yes    |
+| firefox | tampermonkey       | yes    |
+| firefox | violentmonkey      | yes    |
+| firefox | greasemonkey       | no     |
+
+greasemonkey support probably coming eventually but for now it's broken
+
+other browsers & userscript managers will probably work fine, these are just the ones i've tested it on. If you've tried it on one that isn't listed, let me know whether it works and I'll add it to the list!
