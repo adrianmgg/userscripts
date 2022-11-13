@@ -6,13 +6,18 @@ force-enables various picrew features:
 - randomizing
 
 compatibility
-| browser | userscript manager | works? |
-| ------- | ------------------ | ------ |
-| chrome  | tampermonkey       | yes    |
-| firefox | tampermonkey       | yes    |
-| firefox | violentmonkey      | yes    |
-| firefox | greasemonkey       | no     |
-| iOS     | userscripts        | yes    |
+<table>
+  <thead>
+    <tr><th>browser</th><th>userscript manager</th><th>works?</th></tr>
+  </thead>
+  <tbody>
+    <tr><td> chrome  </td><td> tampermonkey  </td><td> yes </td></tr>
+    <tr><td> firefox </td><td> tampermonkey  </td><td> yes </td></tr>
+    <tr><td> firefox </td><td> violentmonkey </td><td> yes </td></tr>
+    <tr><td> firefox </td><td> greasemonkey  </td><td> no  </td></tr>
+    <tr><td> iOS     </td><td> userscripts   </td><td> yes </td></tr>
+  </tbody>
+</table>
 
 greasemonkey support probably coming eventually but for now it's broken
 
