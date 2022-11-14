@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         picrew tweaker
 // @namespace    https://github.com/adrianmgg
-// @version      1.0.2
+// @version      1.0.3
 // @description  force-enables various picrew features
 // @author       amgg
 // @match        https://picrew.me/image_maker/*
