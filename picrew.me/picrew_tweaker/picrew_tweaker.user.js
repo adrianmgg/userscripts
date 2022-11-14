@@ -16,7 +16,7 @@
     // not all userscript managers have unsafeWindow
     const _unsafeWindow = typeof unsafeWindow !== 'undefined' ? unsafeWindow : window;
     // https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/Sharing_objects_with_page_scripts#sharing_content_script_objects_with_page_scripts
-    // necessary on firefox to avoid crashes
+    // necessary on greasemonkey to avoid crashes
     const _exportFunctionToUnsafeWindow = typeof exportFunction !== 'undefined' ?
         (func) => exportFunction(func, _unsafeWindow) :
         (func) => func;
