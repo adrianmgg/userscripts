@@ -12,13 +12,12 @@ compatibility
   </thead>
   <tbody>
     <tr><td> chrome  </td><td> tampermonkey  </td><td> yes </td></tr>
+    <tr><td> chrome  </td><td> violentmonkey </td><td> yes </td></tr>
     <tr><td> firefox </td><td> tampermonkey  </td><td> yes </td></tr>
     <tr><td> firefox </td><td> violentmonkey </td><td> yes </td></tr>
-    <tr><td> firefox </td><td> greasemonkey  </td><td> no  </td></tr>
+    <tr><td> firefox </td><td> greasemonkey  </td><td> yes </td></tr>
     <tr><td> iOS     </td><td> userscripts   </td><td> yes </td></tr>
   </tbody>
 </table>
-
-greasemonkey support probably coming eventually but for now it's broken
 
 other browsers & userscript managers will probably work fine, these are just the ones i've tested it on. If you've tried it on one that isn't listed, let me know whether it works and I'll add it to the list!
