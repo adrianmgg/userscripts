@@ -14,12 +14,12 @@
     'use strict';
 
     // not all userscript managers have unsafeWindow
-    const _unsafeWindow = unsafeWindow || window;
+    const _unsafeWindow = typeof unsafeWindow !== 'undefined' ? unsafeWindow : window;
     // https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/Sharing_objects_with_page_scripts#sharing_content_script_objects_with_page_scripts
-    const _exportFunctionToUnsafeWindow = (() => {
-        if(exportFunction) return (func) => exportFunction(func, _unsafeWindow);
-        else               return (func) => func;
-    })();
+    // necessary on firefox to avoid crashes
+    const _exportFunctionToUnsafeWindow = typeof exportFunction !== 'undefined' ?
+        (func) => exportFunction(func, _unsafeWindow) :
+        (func) => func;
 
     // apply our modifications to the parts list
     const patchPList = _exportFunctionToUnsafeWindow(function patchPList(pList) {
