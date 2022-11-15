@@ -4,6 +4,7 @@ force-enables various picrew features:
 - moving/rotating/resizing parts
 - disabling parts
 - randomizing
+
 and tweaks how some other features work:
 - widens the range of possible sizes when resizing parts
 
