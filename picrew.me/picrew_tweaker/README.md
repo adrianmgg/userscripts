@@ -8,6 +8,8 @@ force-enables various picrew features:
 and tweaks how some other features work:
 - widens the range of possible sizes when resizing parts
 
+---
+
 compatibility
 <table>
   <thead>
