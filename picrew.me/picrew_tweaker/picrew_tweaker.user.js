@@ -16,14 +16,94 @@
     // not all userscript managers have unsafeWindow
     const _unsafeWindow = typeof unsafeWindow !== 'undefined' ? unsafeWindow : window;
     // https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/Sharing_objects_with_page_scripts#sharing_content_script_objects_with_page_scripts
-    // necessary on greasemonkey to avoid crashes
+    // necessary on greasemonkey to avoid errors when the page calls our wrapped functions
     const _exportFunctionToUnsafeWindow = typeof exportFunction !== 'undefined' ?
         (func) => exportFunction(func, _unsafeWindow) :
         (func) => func;
+    const _cloneIntoUnsafeWindow = typeof cloneInto !== 'undefined' ?
+        (obj) => cloneInto(obj, _unsafeWindow) :
+        (obj) => obj;
+    const _cloneIntoUnsafeWindowWithFunctions = typeof cloneInto !== 'undefined' ?
+        (obj) => cloneInto(obj, _unsafeWindow, {cloneFunctions: true}) :
+        (obj) => obj;
+
+    // can't seem to get this part working with cloneInto/exportFunction yet so i guess i'll just eval it
+    _unsafeWindow.eval(`
+(() => {
+const window__Image = window.Image;
+window.Image = class ImageWrapper extends window__Image {
+    constructor(...args) {
+        super(...args);
+    }
+    set src(v) {
+        if(typeof v === 'string' && v.endsWith('?INTERCEPT_SCALE_X2')) {
+            this.loadX2version(v).then(src => { super.src = src; });
+        } else {
+            super.src = v;
+        }
+        return super.src;
+    }
+    get src() {
+        return super.src;
+    }
+    loadX2version(x1url) {
+        return new Promise((resolve) => {
+            const origImg = new window__Image(x1url);
+            origImg.crossOrigin = 'anonymous';
+            origImg.addEventListener('load', () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = origImg.naturalWidth * 2;
+                canvas.height = origImg.naturalHeight * 2;
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(origImg, 0, 0, canvas.width, canvas.height);
+                resolve(canvas.toDataURL('image/png'));
+            });
+            origImg.src = x1url;
+        });
+    }
+};
+})();
+    `);
+
 
     // apply our modifications to the parts list
-    const patchPList = _exportFunctionToUnsafeWindow(function patchPList(pList) {
+    const patchPList = _exportFunctionToUnsafeWindow(function patchPList(pList, nuxt) {
         try {
+            // find min/max scale levels
+            let minScale = 0, maxScale = 0;
+            for(let i = 0; i in nuxt.state.scales; i++) { maxScale = i; }
+            for(let i = 0; i in nuxt.state.scales; i--) { minScale = i; }
+            // inject new scale levels & update min/max to match
+            {
+                const lowestScaleLevel = parseFloat(nuxt.state.scales[minScale]);
+                const secondLowestScaleLevel = parseFloat(nuxt.state.scales[minScale + 1]);
+                const lowScaleDelta = secondLowestScaleLevel - lowestScaleLevel;
+                for(let i = minScale - 1, f = lowestScaleLevel - lowScaleDelta; f > 0; i--, f -= lowScaleDelta) {
+                    nuxt.state.scales[i] = f.toString();
+                    minScale = i;
+                }
+                const highestScaleLevel = parseFloat(nuxt.state.scales[maxScale]);
+                const secondHighestScaleLevel = parseFloat(nuxt.state.scales[maxScale - 1]);
+                const highScaleDelta = highestScaleLevel - secondHighestScaleLevel;
+                const newMaxScaleTarget = highestScaleLevel * 2;
+                for(let i = maxScale + 1, f = highestScaleLevel + highScaleDelta; f < newMaxScaleTarget; i++, f += highScaleDelta) {
+                    nuxt.state.scales[i] = f.toString();
+                    maxScale = i;
+                }
+            }
+            // add fake x2 urls which we later intercept in the Image() wrapper
+            for(const k1 in nuxt.state.commonImages) {
+                for(const k2 in nuxt.state.commonImages[k1]) {
+                    for(const k3 in nuxt.state.commonImages[k1][k2]) {
+                        const cimg = nuxt.state.commonImages[k1][k2][k3];
+                        if(!('x2Url' in cimg)) {
+                            cimg.x2Url = cimg.url + '?INTERCEPT_SCALE_X2';
+                        }
+                    }
+                }
+            }
+            // patch part list
             pList.forEach(p=>{
                 // i think various *Cnt attrs have max of 99 via editor? maybe
                 // enable move button
@@ -44,38 +124,12 @@
                 p.rotaLCnt = Infinity; // left rot steps
                 p.rotaRCnt = Infinity; // right rot steps
                 // resize
-                // p.isRsiz = 1; // enable
-                // const is_patched = p.items.every(item=>p.lyrs.every(layer=>data.cpList[p.cpId].every(color=>patched_imgs[item.itmId]?.[layer]?.[color.cId])));
-                // if(is_patched){
-                //     // if patched
-                //     p.miSNo = -10 + 10; // min
-                //     p.mxSNo = 20; // max
-                //     p.sNo = 10; // current
-                //     data.zeroConf[p.pId].sNo = p.sNo;
-                // } else {
-                //     p.miSNo = -10; // min
-                //     p.mxSNo = 20; // max
-                //     p.sNo = 0; // current
-                // }
+                p.isRsiz = 1; // enable resizing
+                p.miSNo = minScale;
+                p.mxSNo = maxScale;
+                p.sNo ??= 0;
                 // enable removing part
                 p.isRmv = 1;
-                //
-                // p.isMy = 0;
-                // p.isRmv = 0;
-                // delete p.ticY;
-                // ^no effect
-                // delete p.dwnCnt;
-                // delete p.upCnt;
-                // ^deleting either up or dwn removes
-                //
-                // p.canMv = 1; // enable move button
-                // p.isMx = 0; // enable x axis move
-                // p.isMy = 1; // enable y axis move
-                // p.isRmv = 1; // enable move
-                // p.ticY = 2; // ?
-                // p.dwnCnt = 3; // ?
-                // p.upCnd = 3; // ?
-                // p.isRmv = 1;
             });
         } catch(err) {
             console.error('error patchcing pList', err);
@@ -87,7 +141,7 @@
             // enable randomizing
             nuxt.state.imageMakerInfo.can_randomize = 1;
             nuxt.state.imageMakerInfo.can_fixed_randomize = 1;
-            patchPList(nuxt?.state?.config?.pList);
+            patchPList(nuxt?.state?.config?.pList, nuxt);
         } catch(err) {
             console.log('error patching nuxt', err);
         }
