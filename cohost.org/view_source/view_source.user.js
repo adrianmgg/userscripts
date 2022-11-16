@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         cohost view post source
 // @namespace    https://github.com/adrianmgg
-// @version      1.0.4
+// @version      1.0.5
 // @description  adds a "view source" button to posts on cohost
 // @author       amgg
 // @match        https://cohost.org/*
@@ -12,6 +12,13 @@
 // @compatible   chrome
 // @license      MIT
 // ==/UserScript==
+
+(function() {
+
+// =============================================================================
+
+// not all userscript managers have unsafeWindow
+const _unsafeWindow = typeof unsafeWindow !== 'undefined' ? unsafeWindow : window;
 
 // ======== https://github.com/adrianmgg/elhelper ========
 function setup(elem,{style:{vars:styleVars={},...style}={},attrs={},dataset={},events={},classList=[],children=[],parent=null,insertBefore=null,...props}){for(const k in style)elem.style[k]=style[k];for(const k in styleVars)elem.style.setProperty(k,styleVars[k]);for(const k in attrs)elem.setAttribute(k,attrs[k]);for(const k in dataset)elem.dataset[k]=dataset[k];for(const k in events)elem.addEventListener(k,events[k]);for(const c of classList)elem.classList.add(c);for(const k in props)elem[k]=props[k];for(const c of children)elem.appendChild(c);if(parent!==null){if(insertBefore!==null)parent.insertBefore(elem,insertBefore);else parent.appendChild(elem);}return elem;}
@@ -271,7 +278,7 @@ observer_helper_chain(
 // as far as i can tell the problem *still* happens on greasemonkey even then.
 // doing it this way with events seems to work everywhere through, so that's
 // what i'll go with
-unsafeWindow.eval(`
+_unsafeWindow.eval(`
 (() => {
 function return_post_to_sandbox(post) {
     document.dispatchEvent(new CustomEvent('amgg__viewsource__foundpost', {
@@ -323,3 +330,5 @@ window.EventSource = function(...args) {
 };
 })();
 `);
+
+})();
