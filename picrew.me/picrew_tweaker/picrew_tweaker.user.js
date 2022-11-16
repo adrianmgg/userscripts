@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         picrew tweaker
 // @namespace    https://github.com/adrianmgg
-// @version      1.1.1
+// @version      1.2.0
 // @description  force-enables various picrew features
 // @author       amgg
 // @match        https://picrew.me/image_maker/*
@@ -133,6 +133,12 @@ window.Image = class ImageWrapper extends window__Image {
                 p.sNo ??= 0;
                 // enable removing part
                 p.isRmv = 1;
+                // in/out can't be enabled for most parts, but we can increase the range for parts that do have it
+                if('isAWSp' in p && p.isAWSp === 1) {
+                    // p.ticWSp;
+                    p.wSpInCnt = Infinity;
+                    p.wSpOutCnt = Infinity;
+                }
             });
         } catch(err) {
             console.log('error patching nuxt', err);
