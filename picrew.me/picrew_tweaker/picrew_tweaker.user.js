@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         picrew tweaker
 // @namespace    https://github.com/adrianmgg
-// @version      1.1.0
+// @version      1.1.1
 // @description  force-enables various picrew features
 // @author       amgg
 // @match        https://picrew.me/image_maker/*
@@ -68,8 +68,11 @@ window.Image = class ImageWrapper extends window__Image {
 
 
     // apply our modifications to the parts list
-    const patchPList = _exportFunctionToUnsafeWindow(function patchPList(pList, nuxt) {
+    const patchNuxt = _exportFunctionToUnsafeWindow(function patchNuxt(nuxt) {
         try {
+            // enable randomizing
+            nuxt.state.imageMakerInfo.can_randomize = 1;
+            nuxt.state.imageMakerInfo.can_fixed_randomize = 1;
             // find min/max scale levels
             let minScale = 0, maxScale = 0;
             for(let i = 0; i in nuxt.state.scales; i++) { maxScale = i; }
@@ -104,7 +107,7 @@ window.Image = class ImageWrapper extends window__Image {
                 }
             }
             // patch part list
-            pList.forEach(p=>{
+            nuxt.state.config.pList.forEach(p=>{
                 // i think various *Cnt attrs have max of 99 via editor? maybe
                 // enable move button
                 p.canMv = 1;
@@ -131,17 +134,6 @@ window.Image = class ImageWrapper extends window__Image {
                 // enable removing part
                 p.isRmv = 1;
             });
-        } catch(err) {
-            console.error('error patchcing pList', err);
-        }
-    });
-
-    const patchNuxt = _exportFunctionToUnsafeWindow(function patchNuxt(nuxt) {
-        try {
-            // enable randomizing
-            nuxt.state.imageMakerInfo.can_randomize = 1;
-            nuxt.state.imageMakerInfo.can_fixed_randomize = 1;
-            patchPList(nuxt?.state?.config?.pList, nuxt);
         } catch(err) {
             console.log('error patching nuxt', err);
         }
