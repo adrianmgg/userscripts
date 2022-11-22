@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         cohost view post source
 // @namespace    https://github.com/adrianmgg
-// @version      1.0.5
+// @version      1.0.6
 // @description  adds a "view source" button to posts on cohost
 // @author       amgg
 // @match        https://cohost.org/*
@@ -257,7 +257,9 @@ observer_helper_chain(
             // initial posts on home page (first page only)
             cohost_loader_state.dashboard?.posts?.forEach?.(handle_post_data);
             // posts on home but not first page
+            // TODO - is project-post-feed used anymore?
             cohost_loader_state['project-post-feed']?.posts?.forEach?.(handle_post_data);
+            cohost_loader_state['dashboard-nonlive-post-feed']?.posts?.forEach?.(handle_post_data);
             // posts on a tag search page
             cohost_loader_state['tagged-post-feed']?.posts?.forEach?.(handle_post_data);
         }
