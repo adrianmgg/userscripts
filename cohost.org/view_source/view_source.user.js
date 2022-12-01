@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         cohost view post source
 // @namespace    https://github.com/adrianmgg
-// @version      1.0.6
+// @version      1.0.7
 // @description  adds a "view source" button to posts on cohost
 // @author       amgg
 // @match        https://cohost.org/*
@@ -80,7 +80,7 @@ function arrayEqualsStrict(a, b) {
 
 // ======== css stuff ========
 
-window.addEventListener('DOMContentLoaded', e => {
+function inject_stylesheet() {
     create('style', {
         parent: document.head,
         textContent: `
@@ -94,7 +94,7 @@ window.addEventListener('DOMContentLoaded', e => {
 }
 `,
     });
-});
+}
 
 // ========= ========
 
@@ -223,17 +223,19 @@ if(document.readyState === 'interactive') {
 
 // ======== handle the posts that are on the page initially ========
 
+document.addEventListener('amgg__viewsource__foundpost', (e) => {
+    handle_post_data(e.detail.post);
+});
 // (initially I did this by just grabbing the desired elements out of the head
 //  as soon as they were present, but with longer data and a slower connection
 //  that ended up trying to parse the json data before the content of the node
 //  had fully loaded, which would fail. because of that, i switched to waiting
 //  for the body to exist, since that should mean all the head nodes have been
 //  fully downloaded)
-document.addEventListener('amgg__viewsource__foundpost', (e) => {
-    handle_post_data(e.detail.post);
-});
 observer_helper_chain(
     (body) => {
+        inject_stylesheet();
+
         const dehydrated_state_elem = document.getElementById('trpc-dehydrated-state');
         if(dehydrated_state_elem !== null) {
             const dehydrated_state = JSON.parse(dehydrated_state_elem.textContent);
@@ -251,6 +253,7 @@ observer_helper_chain(
                 }
             }
         }
+
         const cohost_loader_state_elem = document.getElementById('__COHOST_LOADER_STATE__');
         if(cohost_loader_state_elem !== null) {
             const cohost_loader_state = JSON.parse(cohost_loader_state_elem.textContent);
@@ -262,6 +265,8 @@ observer_helper_chain(
             cohost_loader_state['dashboard-nonlive-post-feed']?.posts?.forEach?.(handle_post_data);
             // posts on a tag search page
             cohost_loader_state['tagged-post-feed']?.posts?.forEach?.(handle_post_data);
+            // bookmarks
+            cohost_loader_state['bookmarked-tag-feed']?.posts?.forEach?.(handle_post_data);
         }
     },
     [n => n.nodeType === Node.ELEMENT_NODE && n.nodeName === 'HTML', {once: true}],
