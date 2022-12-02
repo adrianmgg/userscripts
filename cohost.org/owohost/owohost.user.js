@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         owohost
 // @namespace    https://github.com/adrianmgg
-// @version      1.0.0
+// @version      1.0.1
 // @description  owo
 // @author       amgg
 // @match        https://cohost.org/*
@@ -190,7 +190,7 @@ observer_helper_chain(
     [n => n.nodeType === Node.ELEMENT_NODE && n.id === 'app',             {once: true }],
     [n => n.nodeType === Node.ELEMENT_NODE,                               {once: false}],
     [n => n.nodeType === Node.ELEMENT_NODE && n.nodeName !== 'HEADER',    {once: true }],
-    [n => n.nodeType === Node.ELEMENT_NODE && n.nodeName === 'MAIN',      {once: true }],
+    [n => n.nodeType === Node.ELEMENT_NODE && n.nodeName === 'MAIN',      {once: false}],
     [n => n.nodeType === Node.ELEMENT_NODE && n.previousSibling === null, {once: true }],
     [n => n.nodeType === Node.ELEMENT_NODE && n.nodeName === 'UL',        {once: true }],
     [n => n.nodeType === Node.ELEMENT_NODE && n.nodeName === 'A',         {once: false}],
