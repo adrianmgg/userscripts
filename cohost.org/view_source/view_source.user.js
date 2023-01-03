@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         cohost view post source
 // @namespace    https://github.com/adrianmgg
-// @version      1.0.7
+// @version      1.0.8
 // @description  adds a "view source" button to posts on cohost
 // @author       amgg
 // @match        https://cohost.org/*
@@ -267,6 +267,8 @@ observer_helper_chain(
             cohost_loader_state['tagged-post-feed']?.posts?.forEach?.(handle_post_data);
             // bookmarks
             cohost_loader_state['bookmarked-tag-feed']?.posts?.forEach?.(handle_post_data);
+            // per-user tag pages (/username/tagged/tag)
+            cohost_loader_state['project-tagged-post-feed']?.posts?.forEach?.(handle_post_data);
         }
     },
     [n => n.nodeType === Node.ELEMENT_NODE && n.nodeName === 'HTML', {once: true}],
