@@ -5,6 +5,8 @@
 
 shows all the versions listed for a file, rather than hiding them behind a +2 thing you need to hover over
 
+currently only works on `legacy.curseforge.com`, support for the new curseforge pages is being worked on.
+
 # example
 
 changes this:
