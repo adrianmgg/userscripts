@@ -1,10 +1,10 @@
 // ==UserScript==
 // @name         picrew tweaker
 // @namespace    https://github.com/adrianmgg
-// @version      1.2.0
+// @version      1.3.0
 // @description  force-enables various picrew features
 // @author       amgg
-// @match        https://picrew.me/image_maker/*
+// @match        https://picrew.me/*image_maker/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=picrew.me
 // @run-at       document-start
 // @grant        unsafeWindow
