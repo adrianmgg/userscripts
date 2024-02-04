@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         infinite craft combo tracker
 // @namespace    https://github.com/adrianmgg
-// @version      2.0.0
-// @description  tracks how you made things in infinite craft. no ui yet so just look at the storage data directly
+// @version      2.0.1
+// @description  tracks how you made things in infinite craft
 // @author       amgg
 // @match        https://neal.fun/infinite-craft/
 // @icon         https://neal.fun/favicons/infinite-craft.png
@@ -11,6 +11,7 @@
 // @grant        GM_getValue
 // @run-at       document-idle
 // @compatible   chrome
+// @compatible   firefox
 // @license      MIT
 // ==/UserScript==
 
