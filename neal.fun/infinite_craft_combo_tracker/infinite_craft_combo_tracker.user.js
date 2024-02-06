@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         infinite craft combo tracker
 // @namespace    https://github.com/adrianmgg
-// @version      2.0.1
+// @version      2.0.2
 // @description  tracks how you made things in infinite craft
 // @author       amgg
 // @match        https://neal.fun/infinite-craft/
@@ -13,6 +13,8 @@
 // @compatible   chrome
 // @compatible   firefox
 // @license      MIT
+// @downloadURL https://update.greasyfork.org/scripts/486552/infinite%20craft%20combo%20tracker.user.js
+// @updateURL https://update.greasyfork.org/scripts/486552/infinite%20craft%20combo%20tracker.meta.js
 // ==/UserScript==
 
 // TODO test on firefox
@@ -72,14 +74,18 @@
             return resp;
         };
 
+        // get the dataset thing they use for scoping css stuff
+        // TODO add some better handling for if there's zero/multiple dataset attrs on that element in future
+        const cssScopeDatasetThing = Object.keys(icMain.$el.dataset)[0];
+
         function mkElementItem(element) {
             return elhelper.create('div', {
                 classList: ['item'],
-                dataset: {'v-0e76d111': ''}, // needed b/c they use some kinda scoped css thing
+                dataset: {[cssScopeDatasetThing]: ''},
                 children: [
                     elhelper.create('span', {
                         classList: ['item-emoji'],
-                        dataset: {'v-0e76d111': ''},
+                        dataset: {[cssScopeDatasetThing]: ''},
                         textContent: element.emoji,
                         style: {
                             pointerEvents: 'none',
