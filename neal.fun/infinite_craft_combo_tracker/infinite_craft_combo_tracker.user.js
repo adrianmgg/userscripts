@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         infinite craft tweaks
 // @namespace    https://github.com/adrianmgg
-// @version      2.4.0
+// @version      2.4.1
 // @description  recipe tracking + other various tweaks for infinite craft
 // @author       amgg
 // @match        https://neal.fun/infinite-craft/
@@ -62,6 +62,7 @@
     }
     function main() {
         const _getCraftResponse = icMain.getCraftResponse;
+        const _selectElement = icMain.selectElement;
         icMain.getCraftResponse = async function(lhs, rhs) {
             const resp = await _getCraftResponse.apply(this, arguments);
             saveCombo(lhs.text, rhs.text, resp.result);
@@ -75,16 +76,16 @@
                 e.stopPropagation();
                 const elements = icMain._data.elements;
                 const randomElement = elements[Math.floor(Math.random() * elements.length)];
-                icMain.selectElement(e, randomElement);
+                _selectElement(e, randomElement);
             } else if(e.buttons === 1 && !e.altKey && e.shiftKey) { // lmb + shift
                 e.preventDefault();
                 e.stopPropagation();
                 const instances = icMain._data.instances;
                 const lastInstance = instances[instances.length - 1];
                 const lastInstanceElement = icMain._data.elements.filter(e => e.text === lastInstance.text)[0];
-                icMain.selectElement(e, lastInstanceElement);
+                _selectElement(e, lastInstanceElement);
             }
-        }, {capture: true});
+        }, {capture: false});
 
         // get the dataset thing they use for scoping css stuff
         // TODO add some better handling for if there's zero/multiple dataset attrs on that element in future
@@ -207,9 +208,8 @@
                 overflowY: 'auto',
             },
         });
-        const _selectElement = icMain.selectElement;
         icMain.selectElement = function(mouseEvent, element) {
-            if(mouseEvent.buttons === 4) {
+            if(mouseEvent.buttons === 4 || (mouseEvent.buttons === 1 && mouseEvent.altKey && !mouseEvent.shiftKey)) {
                 // this won't actually stop it since what gets passed into this is a mousedown event
                 mouseEvent.preventDefault();
                 mouseEvent.stopPropagation();
@@ -219,7 +219,7 @@
                     parent: pinnedCombos,
                     events: {
                         mousedown: (e) => {
-                            if(e.buttons === 4) {
+                            if(e.buttons === 4 || (e.buttons === 1 && e.altKey && !e.shiftKey)) {
                                 pinnedCombos.removeChild(elementElement);
                                 return;
                             }

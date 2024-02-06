@@ -8,7 +8,7 @@ various tweaks for [infinite craft](https://neal.fun/infinite-craft/)
 - hold alt + click + drag to easily add a random element
 - hold shift + click + drag to quickly spawn another of the most recently spawned element
 - menu to view all your first discoveries
-- middle click elements to favorite/pin them to the top
+- middle click (or alt + left click) elements to favorite/pin them to the top
 
 # compatibility
 
