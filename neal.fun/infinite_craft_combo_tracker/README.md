@@ -6,6 +6,7 @@
 various tweaks for [infinite craft](https://neal.fun/infinite-craft/)
 - remembers all the combos you've created, with a UI for viewing them
 - hold alt + click + drag to easily add a random element
+- hold shift + click + drag to quickly spawn another of the most recently spawned element
 - menu to view all your first discoveries
 
 # compatibility
