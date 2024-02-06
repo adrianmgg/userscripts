@@ -75,11 +75,11 @@
         function mkElementItem(element) {
             return elhelper.create('div', {
                 classList: ['item'],
-                dataset: {'v-2b6b8a14': ''}, // needed b/c they use some kinda scoped css thing
+                dataset: {'v-7e453be4': ''}, // needed b/c they use some kinda scoped css thing
                 children: [
                     elhelper.create('span', {
                         classList: ['item-emoji'],
-                        dataset: {'v-2b6b8a14': ''},
+                        dataset: {'v-7e453be4': ''},
                         textContent: element.emoji,
                         style: {
                             pointerEvents: 'none',
