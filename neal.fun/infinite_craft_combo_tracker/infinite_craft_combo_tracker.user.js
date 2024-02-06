@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         infinite craft tweaks
 // @namespace    https://github.com/adrianmgg
-// @version      2.3.0
+// @version      2.4.0
 // @description  recipe tracking + other various tweaks for infinite craft
 // @author       amgg
 // @match        https://neal.fun/infinite-craft/
@@ -180,8 +180,8 @@
             });
         }
         addControlsButton('recipes', () => {
-            updateRecipesList();
             recipesDialog.showModal();
+            updateRecipesList();
         });
 
         // first discoveries list (just gonna hijack the recipes popup for simplicity)
@@ -192,6 +192,45 @@
             });
             recipesDialog.showModal();
         });
+
+        // pinned combos thing
+        const sidebar = document.querySelector('.container > .sidebar');
+        const pinnedCombos = elhelper.create('div', {
+            parent: sidebar,
+            insertBefore: sidebar.firstChild,
+            style: {
+                position: 'sticky',
+                top: '0',
+                background: 'white',
+                width: '100%',
+                maxHeight: '50%',
+                overflowY: 'auto',
+            },
+        });
+        const _selectElement = icMain.selectElement;
+        icMain.selectElement = function(mouseEvent, element) {
+            if(mouseEvent.buttons === 4) {
+                // this won't actually stop it since what gets passed into this is a mousedown event
+                mouseEvent.preventDefault();
+                mouseEvent.stopPropagation();
+                // this isnt a good variable name but it's slightly funny and sometimes that's all that matters
+                const elementElement = mkElementItem(element);
+                elhelper.setup(elementElement, {
+                    parent: pinnedCombos,
+                    events: {
+                        mousedown: (e) => {
+                            if(e.buttons === 4) {
+                                pinnedCombos.removeChild(elementElement);
+                                return;
+                            }
+                            icMain.selectElement(e, element);
+                        },
+                    },
+                });
+                return;
+            }
+            return _selectElement.apply(this, arguments);
+        };
     }
     // stores the object where most of the infinite craft functions live.
     //  can be assumed to be set by the time main is called
