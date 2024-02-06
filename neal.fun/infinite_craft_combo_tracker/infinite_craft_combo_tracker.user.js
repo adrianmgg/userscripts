@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         infinite craft combo tracker
+// @name         infinite craft tweaks
 // @namespace    https://github.com/adrianmgg
-// @version      2.0.2
-// @description  tracks how you made things in infinite craft
+// @version      2.1.0
+// @description  recipe tracking + other various tweaks for infinite craft
 // @author       amgg
 // @match        https://neal.fun/infinite-craft/
 // @icon         https://neal.fun/favicons/infinite-craft.png
@@ -13,13 +13,7 @@
 // @compatible   chrome
 // @compatible   firefox
 // @license      MIT
-// @downloadURL https://update.greasyfork.org/scripts/486552/infinite%20craft%20combo%20tracker.user.js
-// @updateURL https://update.greasyfork.org/scripts/486552/infinite%20craft%20combo%20tracker.meta.js
 // ==/UserScript==
-
-// TODO test on firefox
-
-// TODO all the ui related stuff in this could probably use some polish
 
 (function() {
     'use strict';
@@ -73,6 +67,17 @@
             saveCombo(lhs.text, rhs.text, resp.result);
             return resp;
         };
+
+        // random element thing
+        document.documentElement.addEventListener('mousedown', e => {
+            if(e.buttons === 1 && e.altKey) { // left mouse + alt
+                e.preventDefault();
+                e.stopPropagation();
+                const elements = icMain._data.elements;
+                const randomElement = elements[Math.floor(Math.random() * elements.length)];
+                icMain.selectElement(e, randomElement);
+            }
+        }, {capture: true});
 
         // get the dataset thing they use for scoping css stuff
         // TODO add some better handling for if there's zero/multiple dataset attrs on that element in future
