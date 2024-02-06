@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         infinite craft combo tracker
+// @name         infinite craft tweaks
 // @namespace    https://github.com/adrianmgg
-// @version      2.0.1
-// @description  tracks how you made things in infinite craft
+// @version      2.4.1
+// @description  recipe tracking + other various tweaks for infinite craft
 // @author       amgg
 // @match        https://neal.fun/infinite-craft/
 // @icon         https://neal.fun/favicons/infinite-craft.png
@@ -14,10 +14,6 @@
 // @compatible   firefox
 // @license      MIT
 // ==/UserScript==
-
-// TODO test on firefox
-
-// TODO all the ui related stuff in this could probably use some polish
 
 (function() {
     'use strict';
@@ -70,20 +66,43 @@
     }
     function main() {
         const _getCraftResponse = icMain.getCraftResponse;
+        const _selectElement = icMain.selectElement;
         icMain.getCraftResponse = async function(lhs, rhs) {
             const resp = await _getCraftResponse.apply(this, arguments);
             saveCombo(lhs.text, rhs.text, resp.result);
             return resp;
         };
 
+        // random element thing
+        document.documentElement.addEventListener('mousedown', e => {
+            if(e.buttons === 1 && e.altKey && !e.shiftKey) { // left mouse + alt
+                e.preventDefault();
+                e.stopPropagation();
+                const elements = icMain._data.elements;
+                const randomElement = elements[Math.floor(Math.random() * elements.length)];
+                _selectElement(e, randomElement);
+            } else if(e.buttons === 1 && !e.altKey && e.shiftKey) { // lmb + shift
+                e.preventDefault();
+                e.stopPropagation();
+                const instances = icMain._data.instances;
+                const lastInstance = instances[instances.length - 1];
+                const lastInstanceElement = icMain._data.elements.filter(e => e.text === lastInstance.text)[0];
+                _selectElement(e, lastInstanceElement);
+            }
+        }, {capture: false});
+
+        // get the dataset thing they use for scoping css stuff
+        // TODO add some better handling for if there's zero/multiple dataset attrs on that element in future
+        const cssScopeDatasetThing = Object.keys(icMain.$el.dataset)[0];
+
         function mkElementItem(element) {
             return elhelper.create('div', {
                 classList: ['item'],
-                dataset: {'v-0e76d111': ''}, // needed b/c they use some kinda scoped css thing
+                dataset: {[cssScopeDatasetThing]: ''},
                 children: [
                     elhelper.create('span', {
                         classList: ['item-emoji'],
-                        dataset: {'v-0e76d111': ''},
+                        dataset: {[cssScopeDatasetThing]: ''},
                         textContent: element.emoji,
                         style: {
                             pointerEvents: 'none',
@@ -102,6 +121,7 @@
             // build a name -> element map
             const byName = {};
             for(const element of icMain._data.elements) byName[element.text] = element;
+            function getByName(name) { return byName[name] ?? {emoji: "❌", text: `[userscript encountered an error trying to look up element '${name}']`}; }
             const combos = getCombos();
             function listItemClick(evt) {
                 const elementName = evt.target.dataset.comboviewerElement;
@@ -122,11 +142,11 @@
                 for(const [lhs, rhs] of combos[comboResult]) {
                     recipesListContainer.appendChild(elhelper.create('div', {
                         children: [
-                            mkLinkedElementItem(byName[comboResult]),
+                            mkLinkedElementItem(getByName(comboResult)),
                             document.createTextNode(' = '),
-                            mkLinkedElementItem(byName[lhs]),
+                            mkLinkedElementItem(getByName(lhs)),
                             document.createTextNode(' + '),
-                            mkLinkedElementItem(byName[rhs]),
+                            mkLinkedElementItem(getByName(rhs)),
                         ],
                     }));
                 }
@@ -152,19 +172,69 @@
         });
 
         // recipes button
-        elhelper.create('div', {
-            parent: document.querySelector('.side-controls'),
-            textContent: 'recipes',
-            style: {
-                cursor: 'pointer',
-            },
-            events: {
-                click: (evt) => {
-                    updateRecipesList();
-                    recipesDialog.showModal();
+        function addControlsButton(label, handler) {
+            elhelper.create('div', {
+                parent: document.querySelector('.side-controls'),
+                textContent: label,
+                style: {
+                    cursor: 'pointer',
                 },
+                events: {
+                    click: handler,
+                },
+            });
+        }
+        addControlsButton('recipes', () => {
+            recipesDialog.showModal();
+            updateRecipesList();
+        });
+
+        // first discoveries list (just gonna hijack the recipes popup for simplicity)
+        addControlsButton('discoveries', () => {
+            while(recipesListContainer.firstChild !== null) recipesListContainer.removeChild(recipesListContainer.firstChild);
+            elhelper.setup(recipesListContainer, {
+                children: icMain._data.elements.filter(e => e.discovered).map(mkElementItem),
+            });
+            recipesDialog.showModal();
+        });
+
+        // pinned combos thing
+        const sidebar = document.querySelector('.container > .sidebar');
+        const pinnedCombos = elhelper.create('div', {
+            parent: sidebar,
+            insertBefore: sidebar.firstChild,
+            style: {
+                position: 'sticky',
+                top: '0',
+                background: 'white',
+                width: '100%',
+                maxHeight: '50%',
+                overflowY: 'auto',
             },
         });
+        icMain.selectElement = function(mouseEvent, element) {
+            if(mouseEvent.buttons === 4 || (mouseEvent.buttons === 1 && mouseEvent.altKey && !mouseEvent.shiftKey)) {
+                // this won't actually stop it since what gets passed into this is a mousedown event
+                mouseEvent.preventDefault();
+                mouseEvent.stopPropagation();
+                // this isnt a good variable name but it's slightly funny and sometimes that's all that matters
+                const elementElement = mkElementItem(element);
+                elhelper.setup(elementElement, {
+                    parent: pinnedCombos,
+                    events: {
+                        mousedown: (e) => {
+                            if(e.buttons === 4 || (e.buttons === 1 && e.altKey && !e.shiftKey)) {
+                                pinnedCombos.removeChild(elementElement);
+                                return;
+                            }
+                            icMain.selectElement(e, element);
+                        },
+                    },
+                });
+                return;
+            }
+            return _selectElement.apply(this, arguments);
+        };
     }
     // stores the object where most of the infinite craft functions live.
     //  can be assumed to be set by the time main is called
