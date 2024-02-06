@@ -43,10 +43,14 @@
         console.log(`crafted ${lhs} + ${rhs} -> ${result}`);
         const data = GM_getValue(GM_VALUE_KEY, {});
         if(!(result in data)) data[result] = [];
-        for(const [a, b] in data[result]) {
-            if(a === lhs && b === rhs) return;
+        const sortedLhsRhs = [lhs, rhs];
+        sortedLhsRhs.sort();
+        for(const existingPair of data[result]) {
+            if(sortedLhsRhs[0] === existingPair[0] && sortedLhsRhs[1] === existingPair[1]) return;
         }
-        data[result].push([lhs, rhs]);
+        const pair = [lhs, rhs];
+        pair.sort();
+        data[result].push(pair);
         GM_setValue(GM_VALUE_KEY, data);
     }
     function getCombos() {
