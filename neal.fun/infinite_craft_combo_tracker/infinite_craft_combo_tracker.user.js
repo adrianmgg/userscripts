@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         infinite craft tweaks
 // @namespace    https://github.com/adrianmgg
-// @version      2.1.1
+// @version      2.2.0
 // @description  recipe tracking + other various tweaks for infinite craft
 // @author       amgg
 // @match        https://neal.fun/infinite-craft/
@@ -160,18 +160,30 @@
         });
 
         // recipes button
-        elhelper.create('div', {
-            parent: document.querySelector('.side-controls'),
-            textContent: 'recipes',
-            style: {
-                cursor: 'pointer',
-            },
-            events: {
-                click: (evt) => {
-                    updateRecipesList();
-                    recipesDialog.showModal();
+        function addControlsButton(label, handler) {
+            elhelper.create('div', {
+                parent: document.querySelector('.side-controls'),
+                textContent: label,
+                style: {
+                    cursor: 'pointer',
                 },
-            },
+                events: {
+                    click: handler,
+                },
+            });
+        }
+        addControlsButton('recipes', () => {
+            updateRecipesList();
+            recipesDialog.showModal();
+        });
+
+        // first discoveries list (just gonna hijack the recipes popup for simplicity)
+        addControlsButton('discoveries', () => {
+            while(recipesListContainer.firstChild !== null) recipesListContainer.removeChild(recipesListContainer.firstChild);
+            elhelper.setup(recipesListContainer, {
+                children: icMain._data.elements.filter(e => e.discovered).map(mkElementItem),
+            });
+            recipesDialog.showModal();
         });
     }
     // stores the object where most of the infinite craft functions live.
