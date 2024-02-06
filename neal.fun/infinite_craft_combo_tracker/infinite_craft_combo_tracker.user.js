@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         infinite craft tweaks
 // @namespace    https://github.com/adrianmgg
-// @version      2.1.0
+// @version      2.1.1
 // @description  recipe tracking + other various tweaks for infinite craft
 // @author       amgg
 // @match        https://neal.fun/infinite-craft/
@@ -109,6 +109,7 @@
             // build a name -> element map
             const byName = {};
             for(const element of icMain._data.elements) byName[element.text] = element;
+            function getByName(name) { return byName[name] ?? {emoji: "❌", text: `[userscript encountered an error trying to look up element '${name}']`}; }
             const combos = getCombos();
             function listItemClick(evt) {
                 const elementName = evt.target.dataset.comboviewerElement;
@@ -129,11 +130,11 @@
                 for(const [lhs, rhs] of combos[comboResult]) {
                     recipesListContainer.appendChild(elhelper.create('div', {
                         children: [
-                            mkLinkedElementItem(byName[comboResult]),
+                            mkLinkedElementItem(getByName(comboResult)),
                             document.createTextNode(' = '),
-                            mkLinkedElementItem(byName[lhs]),
+                            mkLinkedElementItem(getByName(lhs)),
                             document.createTextNode(' + '),
-                            mkLinkedElementItem(byName[rhs]),
+                            mkLinkedElementItem(getByName(rhs)),
                         ],
                     }));
                 }
