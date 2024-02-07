@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         infinite craft tweaks
 // @namespace    https://github.com/adrianmgg
-// @version      3.0.0
+// @version      3.0.1
 // @description  recipe tracking + other various tweaks for infinite craft
 // @author       amgg
 // @match        https://neal.fun/infinite-craft/
@@ -83,7 +83,7 @@ proceed with upgrading save data?`);
             }
             // upgrade the data
             if(dataVersion <= 0) {
-                // recipes in this version weren's sorted, and may contain duplicates once sorting has been applied
+                // recipes in this version weren't sorted, and may contain duplicates once sorting has been applied
                 for(const result in data) {
                     // sort the recipes (just do it in place, since we're not gonna use the old data again
                     for(const recipe of data[result]) {
@@ -156,44 +156,30 @@ proceed with upgrading save data?`);
             });
         }
 
+        /* this will call genFn and iterate all the way through it,
+           but taking a break every chunkSize iterations to allow rendering and stuff to happen.
+           returns a promise. */
+        function nonBlockingChunked(chunkSize, genFn, timeout = 0) {
+            return new Promise((resolve, reject) => {
+                const gen = genFn();
+                (function doChunk() {
+                    for(let i = 0; i < chunkSize; i++) {
+                        const next = gen.next();
+                        if(next.done) {
+                            resolve();
+                            return;
+                        }
+                    }
+                    setTimeout(doChunk, timeout);
+                })();
+            });
+        }
+
         // recipes popup
         const recipesListContainer = elhelper.create('div', {
         });
-        function updateRecipesList() {
+        function clearRecipesDialog() {
             while(recipesListContainer.firstChild !== null) recipesListContainer.removeChild(recipesListContainer.firstChild);
-            // build a name -> element map
-            const byName = {};
-            for(const element of icMain._data.elements) byName[element.text] = element;
-            function getByName(name) { return byName[name] ?? {emoji: "❌", text: `[userscript encountered an error trying to look up element '${name}']`}; }
-            const combos = getCombos();
-            function listItemClick(evt) {
-                const elementName = evt.target.dataset.comboviewerElement;
-                document.querySelector(`[data-comboviewer-section="${CSS.escape(elementName)}"]`).scrollIntoView({block: 'nearest'});
-            }
-            function mkLinkedElementItem(element) {
-                return elhelper.setup(mkElementItem(element), {
-                    events: { click: listItemClick },
-                    dataset: { comboviewerElement: element.text },
-                });
-            }
-            for(const comboResult in combos) {
-                if(comboResult === 'Nothing') continue;
-                // anchor for jumping to
-                recipesListContainer.appendChild(elhelper.create('div', {
-                    dataset: { comboviewerSection: comboResult },
-                }));
-                for(const [lhs, rhs] of combos[comboResult]) {
-                    recipesListContainer.appendChild(elhelper.create('div', {
-                        children: [
-                            mkLinkedElementItem(getByName(comboResult)),
-                            document.createTextNode(' = '),
-                            mkLinkedElementItem(getByName(lhs)),
-                            document.createTextNode(' + '),
-                            mkLinkedElementItem(getByName(rhs)),
-                        ],
-                    }));
-                }
-            }
         }
         const recipesDialog = elhelper.create('dialog', {
             parent: document.body,
@@ -212,7 +198,29 @@ proceed with upgrading save data?`);
                 // need to unset this one thing from the page css
                 margin: 'auto',
             },
+            events: {
+                close: (e) => {
+                    clearRecipesDialog();
+                },
+            },
         });
+        async function openRecipesDialog(childGenerator) {
+            clearRecipesDialog();
+            // create a child to add to for just this call,
+            //  as a lazy fix for the bug we'd otherwise have where opening a menu, quickly closing it, then opening it again
+            //  would lead to the old menu's task still adding stuff to the new menu.
+            //  (this doesn't actually stop any unnecessary work, but it at least prevents the possible visual bugs)
+            const container = elhelper.create('div', {parent: recipesListContainer});
+            // show the dialog
+            recipesDialog.showModal();
+            // populate the dialog
+            await nonBlockingChunked(512, function*() {
+                for(const child of childGenerator()) {
+                    container.appendChild(child);
+                    yield;
+                }
+            });
+        }
 
         // recipes button
         function addControlsButton(label, handler) {
@@ -227,18 +235,54 @@ proceed with upgrading save data?`);
                 },
             });
         }
+
         addControlsButton('recipes', () => {
-            recipesDialog.showModal();
-            updateRecipesList();
+            // build a name -> element map
+            const byName = {};
+            for(const element of icMain._data.elements) byName[element.text] = element;
+            function getByName(name) { return byName[name] ?? {emoji: "❌", text: `[userscript encountered an error trying to look up element '${name}']`}; }
+            const combos = getCombos();
+            function listItemClick(evt) {
+                const elementName = evt.target.dataset.comboviewerElement;
+                document.querySelector(`[data-comboviewer-section="${CSS.escape(elementName)}"]`).scrollIntoView({block: 'nearest'});
+            }
+            function mkLinkedElementItem(element) {
+                return elhelper.setup(mkElementItem(element), {
+                    events: { click: listItemClick },
+                    dataset: { comboviewerElement: element.text },
+                });
+            }
+            openRecipesDialog(function*(){
+                for(const comboResult in combos) {
+                    if(comboResult === 'Nothing') continue;
+                    // anchor for jumping to
+                    yield elhelper.create('div', {
+                        dataset: { comboviewerSection: comboResult },
+                    });
+                    for(const [lhs, rhs] of combos[comboResult]) {
+                        yield elhelper.create('div', {
+                            children: [
+                                mkLinkedElementItem(getByName(comboResult)),
+                                document.createTextNode(' = '),
+                                mkLinkedElementItem(getByName(lhs)),
+                                document.createTextNode(' + '),
+                                mkLinkedElementItem(getByName(rhs)),
+                            ],
+                        });
+                    }
+                }
+            });
         });
 
         // first discoveries list (just gonna hijack the recipes popup for simplicity)
         addControlsButton('discoveries', () => {
-            while(recipesListContainer.firstChild !== null) recipesListContainer.removeChild(recipesListContainer.firstChild);
-            elhelper.setup(recipesListContainer, {
-                children: icMain._data.elements.filter(e => e.discovered).map(mkElementItem),
+            openRecipesDialog(function*() {
+                for(const element of icMain._data.elements) {
+                    if(element.discovered) {
+                        yield mkElementItem(element);
+                    }
+                }
             });
-            recipesDialog.showModal();
         });
 
         // pinned combos thing
