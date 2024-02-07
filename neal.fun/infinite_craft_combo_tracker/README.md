@@ -9,6 +9,7 @@ various tweaks for [infinite craft](https://neal.fun/infinite-craft/)
 - hold shift + click + drag to quickly spawn another of the most recently spawned element
 - menu to view all your first discoveries
 - middle click (or alt + left click) elements to favorite/pin them to the top
+- optional regex searching (prefix your query with `regex:`, e.g. `regex:^[0-9]+$`)
 
 # compatibility
 

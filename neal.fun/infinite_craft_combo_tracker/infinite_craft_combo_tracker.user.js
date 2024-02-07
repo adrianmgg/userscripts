@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         infinite craft tweaks
 // @namespace    https://github.com/adrianmgg
-// @version      3.0.1
+// @version      3.1.0
 // @description  recipe tracking + other various tweaks for infinite craft
 // @author       amgg
 // @match        https://neal.fun/infinite-craft/
@@ -133,6 +133,24 @@ proceed with upgrading save data?`);
                 _selectElement(e, lastInstanceElement);
             }
         }, {capture: false});
+
+        // regex-based searching
+        const _sortedElements__get = icMain?._computedWatchers?.sortedElements?.getter;
+        // if that wasn't where we expected it to be, don't try to patch it
+        if(_sortedElements__get !== null && _sortedElements__get !== undefined) {
+            icMain._computedWatchers.sortedElements.getter = function() {
+                if(this.searchQuery && this.searchQuery.startsWith('regex:')) {
+                    try {
+                        const pattern = new RegExp(this.searchQuery.substr(6));
+                        return this.elements.filter((element) => pattern.test(element.text));
+                    } catch(err) {
+                        return [];
+                    }
+                } else {
+                    return _sortedElements__get.apply(this, arguments);
+                }
+            }
+        }
 
         // get the dataset thing they use for scoping css stuff
         // TODO add some better handling for if there's zero/multiple dataset attrs on that element in future
