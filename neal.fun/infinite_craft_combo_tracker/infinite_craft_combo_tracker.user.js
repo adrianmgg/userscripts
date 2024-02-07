@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         infinite craft tweaks
 // @namespace    https://github.com/adrianmgg
-// @version      2.4.2
+// @version      3.0.0
 // @description  recipe tracking + other various tweaks for infinite craft
 // @author       amgg
 // @match        https://neal.fun/infinite-craft/
@@ -38,13 +38,14 @@
         return {setup, create, createNS};
     })();
     const GM_VALUE_KEY = 'infinitecraft_observed_combos';
+    const GM_DATAVERSION_KEY = 'infinitecraft_data_version';
+    const GM_DATAVERSION_LATEST = 1;
     // TODO this should probably use the async versions of getvalue/setvalue since we're already only calling it from async code
     function saveCombo(lhs, rhs, result) {
         console.log(`crafted ${lhs} + ${rhs} -> ${result}`);
-        const data = GM_getValue(GM_VALUE_KEY, {});
+        const data = getCombos();
         if(!(result in data)) data[result] = [];
-        const sortedLhsRhs = [lhs, rhs];
-        sortedLhsRhs.sort();
+        const sortedLhsRhs = sortRecipeIngredients([lhs, rhs]);
         for(const existingPair of data[result]) {
             if(sortedLhsRhs[0] === existingPair[0] && sortedLhsRhs[1] === existingPair[1]) return;
         }
@@ -52,17 +53,59 @@
         pair.sort();
         data[result].push(pair);
         GM_setValue(GM_VALUE_KEY, data);
+        GM_setValue(GM_VALUE_KEY, GM_DATAVERSION_LATEST);
+    }
+    // !! this sorts in-place !!
+    function sortRecipeIngredients(components) {
+        // internally the site uses localeCompare() but that being locale-specific could cause some problems in our use case
+        //  it shouldn't matter though, since as long as we give these *some* consistent order it'll avoid duplicates,
+        //  that order doesn't need to be the same as the one the site uses
+        return components.sort();
     }
     function getCombos() {
-        return GM_getValue(GM_VALUE_KEY, {});
-    }
-    function* iterCombos() {
-        const data = getCombos;
-        for(const result in data) {
-            for(const [lhs, rhs] of data[result]) {
-                yield {lhs, rhs, result};
-            }
+        const data = GM_getValue(GM_VALUE_KEY, {});
+        const dataVersion = GM_getValue(GM_DATAVERSION_KEY, 0);
+        if(dataVersion > GM_DATAVERSION_LATEST) {
+            // uh oh
+            // not gonna even try to handle this case, just toss up an error alert
+            const msg = `infinite craft tweaks userscript's internal save data was marked as version ${dataVersion}, but the highest expected version was ${GM_DATAVERSION_LATEST}.
+if you've downgraded the userscript or copied save data from someone else, update the userscript and try again. otherwise, please file a bug report at https://github.amgg.gg/userscripts/issues`;
+            alert(msg);
+            throw new Error(msg);
         }
+        if(dataVersion < GM_DATAVERSION_LATEST) {
+            // confirm that user wants to update save data
+            const updateConfirm = confirm(`infinite craft tweaks userscript's internal save data is from an earlier version, and needs to be upgraded. (if you select cancel, userscript will be non-functional, so this choice is mostly for if you want to take a moment to manually back up the data just in case.)
+
+proceed with upgrading save data?`);
+            if(!updateConfirm) {
+                throw new Error('user chose not to update save data');
+            }
+            // upgrade the data
+            if(dataVersion <= 0) {
+                // recipes in this version weren's sorted, and may contain duplicates once sorting has been applied
+                for(const result in data) {
+                    // sort the recipes (just do it in place, since we're not gonna use the old data again
+                    for(const recipe of data[result]) {
+                        sortRecipeIngredients(recipe);
+                    }
+                    // build new list with just the ones that remain not duplicate
+                    const newRecipesList = [];
+                    for(const recipe of data[result]) {
+                        if(!(newRecipesList.some(r => recipe[0] === r[0] && recipe[1] === r[1]))) {
+                            newRecipesList.push(recipe);
+                        }
+                    }
+                    data[result] = newRecipesList;
+                }
+            }
+            // now that it's upgraded, save the upgraded data & update the version
+            GM_setValue(GM_VALUE_KEY, data);
+            GM_setValue(GM_DATAVERSION_KEY, GM_DATAVERSION_LATEST);
+            // (fall through to retun below)
+        }
+        // the data is definitely current now
+        return data;
     }
     function main() {
         const _getCraftResponse = icMain.getCraftResponse;
