@@ -25,3 +25,6 @@ various tweaks for [infinite craft](https://neal.fun/infinite-craft/)
 
 (other browsers or userscript managers will probably work, these are just the ones i've tested it on so far)
 
+# notes
+WARNING: the old version 3.1.0 contains a bug that will result in data being lost. if you're downgrading for some reason, don't install that one.
+
