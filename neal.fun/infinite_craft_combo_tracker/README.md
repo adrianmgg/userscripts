@@ -9,7 +9,11 @@ various tweaks for [infinite craft](https://neal.fun/infinite-craft/)
 - hold shift + click + drag to quickly spawn another of the most recently spawned element
 - menu to view all your first discoveries
 - middle click (or alt + left click) elements to favorite/pin them to the top
-- optional regex searching (prefix your query with `regex:`, e.g. `regex:^[0-9]+$`)
+- custom search modes:
+  - prefix with `regex:` for regex search (e.g. `regex:^[0-9]+$` would return any that consist of just numbers)
+  - prefix with `regexi:` for case-insensitive regex search (e.g. `regexi:^wolf` would return `Wolf` and `Wolfman`, but not `Werewolf`)
+  - prefix with `full:` to match the entire element name rather than just substrings (e.g. `full:12` would return `12`, but wouldn't return `1234` or `8126`)
+  - prefix with `fulli:` for the same as `full:` except case insensitive (e.g. `fulli:wolf` would return `Wolf`, but wouldn't return `Werewolf`)
 
 # compatibility
 

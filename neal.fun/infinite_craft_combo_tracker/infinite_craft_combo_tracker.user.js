@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         infinite craft tweaks
 // @namespace    https://github.com/adrianmgg
-// @version      3.2.0
+// @version      3.3.0
 // @description  recipe tracking + other various tweaks for infinite craft
 // @author       amgg
 // @match        https://neal.fun/infinite-craft/
@@ -37,8 +37,24 @@
         function createNS(namespace, tagName, options = {}) { return setup(document.createElementNS(namespace, tagName), options); }
         return {setup, create, createNS};
     })();
-    const GM_VALUE_KEY = 'infinitecraft_observed_combos';
-    const GM_DATAVERSION_KEY = 'infinitecraft_data_version';
+
+    class GMValue {
+        constructor(key, defaultValue) {
+            this._key = key;
+            this._defaultValue = defaultValue;
+        }
+        set(value) {
+            GM_setValue(this._key, value);
+        }
+        get() {
+            return GM_getValue(this._key, this._defaultValue);
+        }
+    }
+
+    const VAL_COMBOS = new GMValue('infinitecraft_observed_combos', {});
+    const VAL_PINNED_ELEMENTS = new GMValue('infinitecraft_pinned_elements', []);
+    const VAL_DATA_VERSION = new GMValue('infinitecraft_data_version', 0);
+    // TODO rename this?
     const GM_DATAVERSION_LATEST = 1;
     // TODO this should probably use the async versions of getvalue/setvalue since we're already only calling it from async code
     function saveCombo(lhs, rhs, result) {
@@ -52,8 +68,8 @@
         const pair = [lhs, rhs];
         pair.sort();
         data[result].push(pair);
-        GM_setValue(GM_VALUE_KEY, data);
-        GM_setValue(GM_DATAVERSION_KEY, GM_DATAVERSION_LATEST);
+        VAL_COMBOS.set(data);
+        VAL_DATA_VERSION.set(GM_DATAVERSION_LATEST);
     }
     // !! this sorts in-place !!
     function sortRecipeIngredients(components) {
@@ -63,8 +79,8 @@
         return components.sort();
     }
     function getCombos() {
-        const data = GM_getValue(GM_VALUE_KEY, {});
-        const dataVersion = GM_getValue(GM_DATAVERSION_KEY, 0);
+        const data = VAL_COMBOS.get();
+        const dataVersion = VAL_DATA_VERSION.get();
         if(dataVersion > GM_DATAVERSION_LATEST) {
             // uh oh
             // not gonna even try to handle this case, just toss up an error alert
@@ -100,8 +116,8 @@ proceed with upgrading save data?`);
                 }
             }
             // now that it's upgraded, save the upgraded data & update the version
-            GM_setValue(GM_VALUE_KEY, data);
-            GM_setValue(GM_DATAVERSION_KEY, GM_DATAVERSION_LATEST);
+            VAL_COMBOS.set(data);
+            VAL_DATA_VERSION.set(GM_DATAVERSION_LATEST);
             // (fall through to retun below)
         }
         // the data is definitely current now
@@ -110,6 +126,7 @@ proceed with upgrading save data?`);
     function main() {
         const _getCraftResponse = icMain.getCraftResponse;
         const _selectElement = icMain.selectElement;
+        const _selectInstance = icMain.selectInstance;
         icMain.getCraftResponse = async function(lhs, rhs) {
             const resp = await _getCraftResponse.apply(this, arguments);
             saveCombo(lhs.text, rhs.text, resp.result);
@@ -134,21 +151,40 @@ proceed with upgrading save data?`);
             }
         }, {capture: false});
 
-        // regex-based searching
+        // special search handlers
+        const searchHandlers = {
+            'regex:': (txt) => {
+                const pattern = new RegExp(txt);
+                return (element) => pattern.test(element.text);
+            },
+            'regexi:': (txt) => {
+                const pattern = new RegExp(txt, 'i');
+                return (element) => pattern.test(element.text);
+            },
+            'full:': (txt) => {
+                return (element) => element.text === txt;
+            },
+            'fulli:': (txt) => {
+                const lower = txt.toLowerCase();
+                return (element) => element.text.toLowerCase() === lower;
+            },
+        };
         const _sortedElements__get = icMain?._computedWatchers?.sortedElements?.getter;
         // if that wasn't where we expected it to be, don't try to patch it
         if(_sortedElements__get !== null && _sortedElements__get !== undefined) {
             icMain._computedWatchers.sortedElements.getter = function() {
-                if(this.searchQuery && this.searchQuery.startsWith('regex:')) {
-                    try {
-                        const pattern = new RegExp(this.searchQuery.substr(6));
-                        return this.elements.filter((element) => pattern.test(element.text));
-                    } catch(err) {
-                        return [];
+                for(const handlerPrefix in searchHandlers) {
+                    if(this.searchQuery && this.searchQuery.startsWith(handlerPrefix)) {
+                        try {
+                            const filter = searchHandlers[handlerPrefix](this.searchQuery.substr(handlerPrefix.length));
+                            return this.elements.filter(filter);
+                        } catch(err) {
+                            console.error(`error during search handler '${handlerPrefix}'`, err);
+                            return [];
+                        }
                     }
-                } else {
-                    return _sortedElements__get.apply(this, arguments);
                 }
+                return _sortedElements__get.apply(this, arguments);
             }
         }
 
@@ -257,8 +293,26 @@ proceed with upgrading save data?`);
         addControlsButton('recipes', () => {
             // build a name -> element map
             const byName = {};
-            for(const element of icMain._data.elements) byName[element.text] = element;
-            function getByName(name) { return byName[name] ?? {emoji: "❌", text: `[userscript encountered an error trying to look up element '${name}']`}; }
+            const byNameLower = {}; // for fallback stuff
+            for(const element of icMain._data.elements) {
+                byName[element.text] = element;
+                byNameLower[element.text.toLowerCase()] = element;
+            }
+            function getByName(name) {
+                // first, try grabbing it by its exact name
+                const fromNormal = byName[name];
+                if(fromNormal !== undefined) {
+                    return byName[name];
+                }
+                // if that doesn't do it, try that but ignoring case.
+                //  i think it doesn't accept new elements if they're case-insensitive equal to an element the user already has? or something like that at least
+                const fromLower = byNameLower[name.toLowerCase()];
+                if(fromLower !== undefined) {
+                    return fromLower;
+                }
+                // worst case, we have neither
+                return {emoji: "❌", text: `[userscript encountered an error trying to look up element '${name}']`};
+            }
             const combos = getCombos();
             function listItemClick(evt) {
                 const elementName = evt.target.dataset.comboviewerElement;
@@ -317,29 +371,66 @@ proceed with upgrading save data?`);
                 overflowY: 'auto',
             },
         });
+        // !! does NOT save it to pins list
+        function addPinnedElementInternal(element) {
+            // this isnt a good variable name but it's slightly funny and sometimes that's all that matters
+            const elementElement = mkElementItem(element);
+            const txt = element.text;
+            elhelper.setup(elementElement, {
+                parent: pinnedCombos,
+                events: {
+                    mousedown: (e) => {
+                        if(e.buttons === 4 || (e.buttons === 1 && e.altKey && !e.shiftKey)) {
+                            pinnedCombos.removeChild(elementElement);
+                            const pins = VAL_PINNED_ELEMENTS.get();
+                            VAL_PINNED_ELEMENTS.set(pins.filter(p => p !== txt));
+                            return;
+                        }
+                        icMain.selectElement(e, element);
+                    },
+                },
+            });
+        }
+        // does save it to pins list also
+        function addPinnedElement(element) {
+            const pins = VAL_PINNED_ELEMENTS.get();
+            if(!(pins.some(p => p === element.text))) { // no duplicates
+                addPinnedElementInternal(element);
+                pins.push(element.text);
+                VAL_PINNED_ELEMENTS.set(pins);
+            }
+        }
         icMain.selectElement = function(mouseEvent, element) {
             if(mouseEvent.buttons === 4 || (mouseEvent.buttons === 1 && mouseEvent.altKey && !mouseEvent.shiftKey)) {
                 // this won't actually stop it since what gets passed into this is a mousedown event
                 mouseEvent.preventDefault();
                 mouseEvent.stopPropagation();
-                // this isnt a good variable name but it's slightly funny and sometimes that's all that matters
-                const elementElement = mkElementItem(element);
-                elhelper.setup(elementElement, {
-                    parent: pinnedCombos,
-                    events: {
-                        mousedown: (e) => {
-                            if(e.buttons === 4 || (e.buttons === 1 && e.altKey && !e.shiftKey)) {
-                                pinnedCombos.removeChild(elementElement);
-                                return;
-                            }
-                            icMain.selectElement(e, element);
-                        },
-                    },
-                });
+                addPinnedElement(element);
                 return;
             }
             return _selectElement.apply(this, arguments);
         };
+        icMain.selectInstance = function(mouseEvent, instance) {
+            // specifically don't do alt-lmb alias for instances, since it ends up being accidentally set off a bunch by the alt-drag random element feature
+            if(mouseEvent.buttons === 4) {
+                // this won't actually stop it since what gets passed into this is a mousedown event
+                mouseEvent.preventDefault();
+                mouseEvent.stopPropagation();
+                addPinnedElement({text: instance.text, emoji: instance.emoji});
+                return;
+            }
+            return _selectInstance.apply(this, arguments);
+        };
+        // load initial pinned elements
+        (() => {
+            const existingPins = VAL_PINNED_ELEMENTS.get();
+            for(const pin of existingPins) {
+                const pinElement = icMain._data.elements.find(e => e.text === pin);
+                if(pinElement !== undefined) {
+                    addPinnedElementInternal(pinElement);
+                }
+            }
+        })();
     }
     // stores the object where most of the infinite craft functions live.
     //  can be assumed to be set by the time main is called
