@@ -121,12 +121,11 @@ function handle_show_post_source_click(article, view_source_btn, post_id) {
             //
             create('div', {
                 parent: article,
-                classList: ['prose', 'px-3', 'amgg__viewsource__source-view-container'],
+                classList: ['co-prose', 'prose', 'px-3', 'amgg__viewsource__source-view-container'],
                 children: [
                     // "wrap text" checkbox
                     create('label', {
                         textContent: 'wrap text ',
-                        classList: ['text-notBlack'],
                         children: [create('input', {
                             type: 'checkbox',
                             checked: false,
