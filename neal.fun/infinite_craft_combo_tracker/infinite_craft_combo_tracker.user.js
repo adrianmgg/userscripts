@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         infinite craft tweaks
 // @namespace    https://github.com/adrianmgg
-// @version      3.3.0
+// @version      3.3.1
 // @description  recipe tracking + other various tweaks for infinite craft
 // @author       amgg
 // @match        https://neal.fun/infinite-craft/
@@ -236,7 +236,8 @@ proceed with upgrading save data?`);
             while(recipesListContainer.firstChild !== null) recipesListContainer.removeChild(recipesListContainer.firstChild);
         }
         const recipesDialog = elhelper.create('dialog', {
-            parent: document.body,
+            // needs to be added to this element or a child of it, since the color scheme css is scoped to there
+            parent: document.querySelector('.container'),
             children: [
                 // close button
                 elhelper.create('button', {
@@ -249,8 +250,12 @@ proceed with upgrading save data?`);
                 recipesListContainer,
             ],
             style: {
+                // make it work with dark mode
+                background: 'var(--sidebar-bg)',
                 // need to unset this one thing from the page css
                 margin: 'auto',
+                // unset default dialog style `color: canvastext` since it prevents the dark mode css from cascading down to our dialog
+                color: 'unset',
             },
             events: {
                 close: (e) => {
@@ -283,6 +288,8 @@ proceed with upgrading save data?`);
                 textContent: label,
                 style: {
                     cursor: 'pointer',
+                    // because they invert the section containing these elements for dark mode, we need to explicitly NOT change color for dark mode
+                    color: '#040404',
                 },
                 events: {
                     click: handler,
@@ -365,10 +372,11 @@ proceed with upgrading save data?`);
             style: {
                 position: 'sticky',
                 top: '0',
-                background: 'white',
+                background: 'var(--sidebar-bg)',
                 width: '100%',
                 maxHeight: '50%',
                 overflowY: 'auto',
+                borderBottom: '1px solid var(--border-color)',
             },
         });
         // !! does NOT save it to pins list
