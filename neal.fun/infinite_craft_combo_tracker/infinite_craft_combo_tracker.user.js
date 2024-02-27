@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         infinite craft tweaks
 // @namespace    https://github.com/adrianmgg
-// @version      3.3.1
+// @version      3.3.2
 // @description  recipe tracking + other various tweaks for infinite craft
 // @author       amgg
 // @match        https://neal.fun/infinite-craft/
@@ -177,7 +177,20 @@ proceed with upgrading save data?`);
                     if(this.searchQuery && this.searchQuery.startsWith(handlerPrefix)) {
                         try {
                             const filter = searchHandlers[handlerPrefix](this.searchQuery.substr(handlerPrefix.length));
-                            return this.elements.filter(filter);
+                            let elements = this.elements;
+                            // discovered filter is cheap, do it early to avoid unnecessary work later
+                            if(this.showDiscoveredOnly) { elements = elements.filter(el => el.discovered); }
+                            // do the actual filter
+                            elements = elements.filter(filter);
+                            // sort after all the filtering is done - doesn't change the result but there's no use sorting what we're not gonna see
+                            // `elements` is already the result of a `.filter()` call, so sorting `elements` in-place here shouldn't modify the underlying data
+                            // (sort functions are grabbed directly from the minified page source)
+                            if(this?.sortBy === 'name') {
+                                elements = elements.sort((function(a,b){return a.text.localeCompare(b.text)}));
+                            } else if(this?.sortBy === 'emoji') {
+                                elements = elements.sort((function(a,b){var e=a.emoji||"⬜",t=b.emoji||"⬜";return e.localeCompare(t)}));
+                            }
+                            return elements;
                         } catch(err) {
                             console.error(`error during search handler '${handlerPrefix}'`, err);
                             return [];
