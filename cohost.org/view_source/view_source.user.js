@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         cohost view post source
 // @namespace    https://github.com/adrianmgg
-// @version      1.0.8
+// @version      1.0.9
 // @description  adds a "view source" button to posts on cohost
 // @author       amgg
 // @match        https://cohost.org/*
