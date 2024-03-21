@@ -169,10 +169,10 @@ proceed with upgrading save data?`);
                 return (element) => element.text.toLowerCase() === lower;
             },
         };
-        const _sortedElements__get = icMain?._computedWatchers?.sortedElements?.getter;
+        const _searchResults__get = icMain?._computedWatchers?.searchResults?.getter;
         // if that wasn't where we expected it to be, don't try to patch it
-        if(_sortedElements__get !== null && _sortedElements__get !== undefined) {
-            icMain._computedWatchers.sortedElements.getter = function() {
+        if(_searchResults__get !== null && _searchResults__get !== undefined) {
+            icMain._computedWatchers.searchResults.getter = function() {
                 for(const handlerPrefix in searchHandlers) {
                     if(this.searchQuery && this.searchQuery.startsWith(handlerPrefix)) {
                         try {
@@ -197,7 +197,7 @@ proceed with upgrading save data?`);
                         }
                     }
                 }
-                return _sortedElements__get.apply(this, arguments);
+                return _searchResults__get.apply(this, arguments);
             }
         }
 
