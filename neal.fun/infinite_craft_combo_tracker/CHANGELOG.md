@@ -1,11 +1,11 @@
 ## 3.3.3 (2024/03/22)
-fixed custom search modes no longer working (contributed by [@onnowhere](https://github.com/onnowhere))
+- fixed custom search modes no longer working (contributed by [onnowhere](https://github.com/onnowhere) in [#8](https://github.com/adrianmgg/userscripts/pull/8))
 
 ## 3.3.2 (2024/02/27)
-custom search modes (regex et al) now work with built-in 'discoveries' filter toggle, name/emoji sort orders
+- custom search modes (regex et al) now work with built-in 'discoveries' filter toggle, name/emoji sort orders
 
 ## 3.3.1 (2024/02/27)
-compatibility with the site's built-in dark mode
+- compatibility with the site's built-in dark mode
 
 ## 3.3.0 (2024/02/07)
 - make pinned elements persist
@@ -14,7 +14,7 @@ compatibility with the site's built-in dark mode
 - add some more custom searching modes alongside just regex
 
 ## 3.2.0 (2024/02/06)
-emergency bug fix because 3.1.0 was corrupting save data
+- emergency bug fix because 3.1.0 was corrupting save data
 
 ## 3.1.0 (2024/02/06)
 **DON'T INSTALL THIS VERSION**
@@ -29,7 +29,11 @@ emergency bug fix because 3.1.0 was corrupting save data
 - store version associated with the save data
 - handle upgrading old save data
 
-... TODO: fill in old changelog items ...
+## ... TODO: fill in old changelog items ...
 
+## 2.4.2 (2024/02/06)
+- fix duplicate recipes being added to list (contributed by [iconmaster5326](https://github.com/iconmaster5326) in [#6](https://github.com/adrianmgg/userscripts/pull/6))
+
+## ... TODO: fill in old changelog items ...
 
 
