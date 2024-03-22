@@ -1,3 +1,6 @@
+## 3.3.3 (2024/03/22)
+fixed custom search modes no longer working (contributed by [@onnowhere](https://github.com/onnowhere))
+
 ## 3.3.2 (2024/02/27)
 custom search modes (regex et al) now work with built-in 'discoveries' filter toggle, name/emoji sort orders
 
