@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         infinite craft tweaks
 // @namespace    https://github.com/adrianmgg
-// @version      3.3.4
+// @version      3.3.5
 // @description  recipe tracking + other various tweaks for infinite craft
 // @author       amgg
 // @match        https://neal.fun/infinite-craft/
@@ -144,10 +144,7 @@ proceed with upgrading save data?`);
     function main() {
         const icSidebar = icMain.$children.find(o => o.$el.id === 'sidebar');
 
-        // console.log('leaving main early, WIP!'); return;
         const _craftApi = icMain.craftApi;
-        // const _selectElement = icMain.selectElement;
-        // const _selectInstance = icMain.selectInstance;
         icMain.craftApi = async function(lhs, rhs) {
             const resp = await _craftApi.apply(this, arguments);
             saveCombo(lhs, rhs, resp.text);
@@ -461,7 +458,7 @@ proceed with upgrading save data?`);
                             VAL_PINNED_ELEMENTS.set(pins.filter(p => p !== txt));
                             return;
                         }
-                        icMain.selectElement(e, element);
+                        draggingCreateInstance(e, element);
                     },
                 },
             });
