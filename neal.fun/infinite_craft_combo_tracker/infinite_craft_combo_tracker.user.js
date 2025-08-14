@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         infinite craft tweaks
 // @namespace    https://github.com/adrianmgg
-// @version      3.3.5
+// @version      3.3.6
 // @description  recipe tracking + other various tweaks for infinite craft
 // @author       amgg
 // @match        https://neal.fun/infinite-craft/
@@ -441,6 +441,7 @@ proceed with upgrading save data?`);
                 maxHeight: '50%',
                 overflowY: 'auto',
                 borderBottom: '1px solid var(--border-color)',
+                zIndex: '200',
             },
         });
         // !! does NOT save it to pins list

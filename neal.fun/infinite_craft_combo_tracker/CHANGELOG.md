@@ -1,3 +1,6 @@
+## 3.3.6 (2025/08/13)
+- fixed pinned items covered when scrolling after 3.3.4
+
 ## 3.3.5 (2025/08/13)
 - fixed pinned items not spawnable after 3.3.4
 
