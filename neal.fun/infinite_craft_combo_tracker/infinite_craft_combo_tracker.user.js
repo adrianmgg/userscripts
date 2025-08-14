@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         infinite craft tweaks
 // @namespace    https://github.com/adrianmgg
-// @version      3.3.3
+// @version      3.3.4
 // @description  recipe tracking + other various tweaks for infinite craft
 // @author       amgg
 // @match        https://neal.fun/infinite-craft/
@@ -51,11 +51,10 @@
         }
     }
 
+    const GM_DATAVERSION_LATEST = 1;
     const VAL_COMBOS = new GMValue('infinitecraft_observed_combos', {});
     const VAL_PINNED_ELEMENTS = new GMValue('infinitecraft_pinned_elements', []);
-    const VAL_DATA_VERSION = new GMValue('infinitecraft_data_version', 0);
-    // TODO rename this?
-    const GM_DATAVERSION_LATEST = 1;
+    const VAL_DATA_VERSION = new GMValue('infinitecraft_data_version', GM_DATAVERSION_LATEST);
     // TODO this should probably use the async versions of getvalue/setvalue since we're already only calling it from async code
     function saveCombo(lhs, rhs, result) {
         console.log(`crafted ${lhs} + ${rhs} -> ${result}`);
@@ -123,31 +122,103 @@ proceed with upgrading save data?`);
         // the data is definitely current now
         return data;
     }
+
+    elhelper.create('style', {
+        parent: document.head,
+        textContent: `
+.tweaks-faux-item {
+  display: inline-block;
+  margin: 4px;
+  border: 1px solid var(--border-color);
+  padding: 9px 10px 8px;
+  border-radius: 5px;
+  box-sizing: border-box;
+  line-height: 1em;
+}
+
+.tweaks-faux-item-emoji {
+}
+`,
+    });
+
     function main() {
-        const _getCraftResponse = icMain.getCraftResponse;
-        const _selectElement = icMain.selectElement;
-        const _selectInstance = icMain.selectInstance;
-        icMain.getCraftResponse = async function(lhs, rhs) {
-            const resp = await _getCraftResponse.apply(this, arguments);
-            saveCombo(lhs.text, rhs.text, resp.result);
+        const icSidebar = icMain.$children.find(o => o.$el.id === 'sidebar');
+
+        // console.log('leaving main early, WIP!'); return;
+        const _craftApi = icMain.craftApi;
+        // const _selectElement = icMain.selectElement;
+        // const _selectInstance = icMain.selectInstance;
+        icMain.craftApi = async function(lhs, rhs) {
+            const resp = await _craftApi.apply(this, arguments);
+            saveCombo(lhs, rhs, resp.text);
             return resp;
         };
 
+        function draggingCreateInstance(mouseEvent, element) {
+            const instance = unsafeWindow.IC.createInstance({
+                text: element.text,
+                emoji: element.emoji,
+                itemId: element.id,
+                x: mouseEvent.clientX,
+                y: mouseEvent.clientY,
+                topLayer: true,
+                animate: false,
+                discovery: false,
+            });
+            icMain.setSelectedInstance(instance);
+            instance.element.dispatchEvent(new MouseEvent('mousedown', {
+                view: unsafeWindow,
+                bubbles: true,
+                cancelable: true,
+                clientX: mouseEvent.clientX,
+                clientY: mouseEvent.clientY,
+                buttons: 1,
+                button: 0,
+                altKey: false,
+                shiftKey: false,
+            }));
+        }
+
         // random element thing
         document.documentElement.addEventListener('mousedown', e => {
+            const isItem = e.target.hasAttribute('data-item');
+            const isInstance = e.target.dataset?.instance === 'true';
+
+            let itemToInstance = null;
             if(e.buttons === 1 && e.altKey && !e.shiftKey) { // left mouse + alt
-                e.preventDefault();
-                e.stopPropagation();
-                const elements = icMain._data.elements;
-                const randomElement = elements[Math.floor(Math.random() * elements.length)];
-                _selectElement(e, randomElement);
-            } else if(e.buttons === 1 && !e.altKey && e.shiftKey) { // lmb + shift
-                e.preventDefault();
-                e.stopPropagation();
-                const instances = icMain._data.instances;
+                const elements = icMain.items;
+                itemToInstance = elements[Math.floor(Math.random() * elements.length)];
+            }
+            if(e.buttons === 1 && !e.altKey && e.shiftKey) { // lmb + shift
+                const instances = unsafeWindow.IC.getInstances();
                 const lastInstance = instances[instances.length - 1];
-                const lastInstanceElement = icMain._data.elements.filter(e => e.text === lastInstance.text)[0];
-                _selectElement(e, lastInstanceElement);
+                if(lastInstance === undefined) {
+                    console.warn("skipping shift-drag behavior because there were no instances");
+                    return;
+                }
+                itemToInstance = icMain.items.filter(e => e.text === lastInstance.text)[0];
+            }
+            if(itemToInstance !== null && itemToInstance !== undefined) {
+                e.preventDefault();
+                e.stopPropagation();
+                draggingCreateInstance(e, itemToInstance);
+                return;
+            }
+
+            let itemToPin = null;
+            if(isItem && (e.buttons === 4 || (e.buttons === 1 && e.altKey && !e.shiftKey))) {
+                itemToPin = icMain.items[e.target.dataset.itemId];
+            }
+            // (specifically don't do alt-lmb alias for instances, since it ends up being accidentally set off a bunch by the alt-drag random element feature)
+            if(isInstance && e.buttons === 4) {
+                const instanceText = e.target.querySelector('.instance-text').textContent;
+                itemToPin = icMain.items.find(item => item.text === instanceText) ?? null;
+            }
+            if(itemToPin !== null && itemToPin !== undefined) {
+                e.preventDefault();
+                e.stopPropagation();
+                addPinnedElement(itemToPin);
+                return;
             }
         }, {capture: false});
 
@@ -169,28 +240,15 @@ proceed with upgrading save data?`);
                 return (element) => element.text.toLowerCase() === lower;
             },
         };
-        const _searchResults__get = icMain?._computedWatchers?.searchResults?.getter;
+        const _searchResults__get = icSidebar?._computedWatchers?.searchResults?.getter;
         // if that wasn't where we expected it to be, don't try to patch it
         if(_searchResults__get !== null && _searchResults__get !== undefined) {
-            icMain._computedWatchers.searchResults.getter = function() {
+            icSidebar._computedWatchers.searchResults.getter = function() {
                 for(const handlerPrefix in searchHandlers) {
                     if(this.searchQuery && this.searchQuery.startsWith(handlerPrefix)) {
                         try {
                             const filter = searchHandlers[handlerPrefix](this.searchQuery.substr(handlerPrefix.length));
-                            let elements = this.elements;
-                            // discovered filter is cheap, do it early to avoid unnecessary work later
-                            if(this.showDiscoveredOnly) { elements = elements.filter(el => el.discovered); }
-                            // do the actual filter
-                            elements = elements.filter(filter);
-                            // sort after all the filtering is done - doesn't change the result but there's no use sorting what we're not gonna see
-                            // `elements` is already the result of a `.filter()` call, so sorting `elements` in-place here shouldn't modify the underlying data
-                            // (sort functions are grabbed directly from the minified page source)
-                            if(this?.sortBy === 'name') {
-                                elements = elements.sort((function(a,b){return a.text.localeCompare(b.text)}));
-                            } else if(this?.sortBy === 'emoji') {
-                                elements = elements.sort((function(a,b){var e=a.emoji||"⬜",t=b.emoji||"⬜";return e.localeCompare(t)}));
-                            }
-                            return elements;
+                            return this.filteredElements.filter(filter);
                         } catch(err) {
                             console.error(`error during search handler '${handlerPrefix}'`, err);
                             return [];
@@ -201,18 +259,14 @@ proceed with upgrading save data?`);
             }
         }
 
-        // get the dataset thing they use for scoping css stuff
-        // TODO add some better handling for if there's zero/multiple dataset attrs on that element in future
-        const cssScopeDatasetThing = Object.keys(icMain.$el.dataset)[0];
-
         function mkElementItem(element) {
             return elhelper.create('div', {
-                classList: ['item'],
-                dataset: {[cssScopeDatasetThing]: ''},
+                classList: ['tweaks-faux-item'],
+                // dataset: {[cssScopeDatasetThing]: ''},
                 children: [
                     elhelper.create('span', {
-                        classList: ['item-emoji'],
-                        dataset: {[cssScopeDatasetThing]: ''},
+                        classList: ['tweaks-faux-item-emoji'],
+                        // dataset: {[cssScopeDatasetThing]: ''},
                         textContent: element.emoji,
                         style: {
                             pointerEvents: 'none',
@@ -314,7 +368,7 @@ proceed with upgrading save data?`);
             // build a name -> element map
             const byName = {};
             const byNameLower = {}; // for fallback stuff
-            for(const element of icMain._data.elements) {
+            for(const element of unsafeWindow.IC.getItems()) {
                 byName[element.text] = element;
                 byNameLower[element.text.toLowerCase()] = element;
             }
@@ -369,7 +423,7 @@ proceed with upgrading save data?`);
         // first discoveries list (just gonna hijack the recipes popup for simplicity)
         addControlsButton('discoveries', () => {
             openRecipesDialog(function*() {
-                for(const element of icMain._data.elements) {
+                for(const element of icMain.items) {
                     if(element.discovered) {
                         yield mkElementItem(element);
                     }
@@ -378,7 +432,7 @@ proceed with upgrading save data?`);
         });
 
         // pinned combos thing
-        const sidebar = document.querySelector('.container > .sidebar');
+        const sidebar = document.querySelector('#sidebar');
         const pinnedCombos = elhelper.create('div', {
             parent: sidebar,
             insertBefore: sidebar.firstChild,
@@ -421,33 +475,14 @@ proceed with upgrading save data?`);
                 VAL_PINNED_ELEMENTS.set(pins);
             }
         }
-        icMain.selectElement = function(mouseEvent, element) {
-            if(mouseEvent.buttons === 4 || (mouseEvent.buttons === 1 && mouseEvent.altKey && !mouseEvent.shiftKey)) {
-                // this won't actually stop it since what gets passed into this is a mousedown event
-                mouseEvent.preventDefault();
-                mouseEvent.stopPropagation();
-                addPinnedElement(element);
-                return;
-            }
-            return _selectElement.apply(this, arguments);
-        };
-        icMain.selectInstance = function(mouseEvent, instance) {
-            // specifically don't do alt-lmb alias for instances, since it ends up being accidentally set off a bunch by the alt-drag random element feature
-            if(mouseEvent.buttons === 4) {
-                // this won't actually stop it since what gets passed into this is a mousedown event
-                mouseEvent.preventDefault();
-                mouseEvent.stopPropagation();
-                addPinnedElement({text: instance.text, emoji: instance.emoji});
-                return;
-            }
-            return _selectInstance.apply(this, arguments);
-        };
         // load initial pinned elements
         (() => {
             const existingPins = VAL_PINNED_ELEMENTS.get();
             for(const pin of existingPins) {
-                const pinElement = icMain._data.elements.find(e => e.text === pin);
-                if(pinElement !== undefined) {
+                const pinElement = icMain.items.find(e => e.text === pin);
+                if(pinElement === undefined) {
+                    console.warn(`failed to find info for pinned item '${pin}'`);
+                } else {
                     addPinnedElementInternal(pinElement);
                 }
             }
@@ -461,7 +496,9 @@ proceed with upgrading save data?`);
     //  but for now just waiting until the function we want exists works well enough
     (function waitForReady(){
         icMain = unsafeWindow?.$nuxt?._route?.matched?.[0]?.instances?.default;
-        if(icMain !== undefined && icMain !== null) main();
+        // for debugging convenience
+        unsafeWindow.__infiniteCraftTweaks__icMain = icMain;
+        if(icMain !== undefined && icMain !== null && unsafeWindow.IC !== undefined) main();
         else setTimeout(waitForReady, 10);
     })();
 })();

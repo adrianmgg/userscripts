@@ -1,3 +1,6 @@
+## 3.3.4 (2025/08/13)
+- fixed everything to work with new changes to the site
+
 ## 3.3.3 (2024/03/22)
 - fixed custom search modes no longer working (contributed by [onnowhere](https://github.com/onnowhere) in [#8](https://github.com/adrianmgg/userscripts/pull/8))
 
