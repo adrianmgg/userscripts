@@ -1,3 +1,6 @@
+## 3.3.7 (2025/08/13)
+- fixed broken ui when crafting has no result after 3.3.4
+
 ## 3.3.6 (2025/08/13)
 - fixed pinned items covered when scrolling after 3.3.4
 

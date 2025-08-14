@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         infinite craft tweaks
 // @namespace    https://github.com/adrianmgg
-// @version      3.3.6
+// @version      3.3.7
 // @description  recipe tracking + other various tweaks for infinite craft
 // @author       amgg
 // @match        https://neal.fun/infinite-craft/
@@ -147,7 +147,9 @@ proceed with upgrading save data?`);
         const _craftApi = icMain.craftApi;
         icMain.craftApi = async function(lhs, rhs) {
             const resp = await _craftApi.apply(this, arguments);
-            saveCombo(lhs, rhs, resp.text);
+            if(resp !== null) {
+                saveCombo(lhs, rhs, resp.text);
+            }
             return resp;
         };
 
