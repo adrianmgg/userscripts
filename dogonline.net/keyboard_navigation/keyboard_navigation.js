@@ -2,7 +2,7 @@
 // @name         dogonline keyboard navigation
 // @namespace    amgg
 // @version      0.4.0
-// @description
+// @description  configurable keybinds for the tower in dogonline.net
 // @author       amgg
 // @match        https://dogonline.net/*
 // @icon         https://dogonline.net/favicon.ico
