@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         dogonline keyboard navigation
 // @namespace    amgg
-// @version      0.5.0
+// @version      0.5.1
 // @description  configurable keybinds for the tower in dogonline.net
 // @author       amgg
 // @match        https://dogonline.net/*
@@ -26,7 +26,7 @@
 }
 
 .${userscriptClass(`menubar`)} {
-    position: absolute;
+    position: fixed;
     top: 0px;
     left: 0px;
     z-index: 999
@@ -62,6 +62,9 @@ ${Object.entries({ close: '00f', add: '0f0', delete: 'f00' }).map(([kind, hex]) 
 	opacity: 0.75;
 	overflow-y: scroll;
 	text-indent: 2em hanging;
+}
+.${userscriptClass('log')}:hover {
+    opacity: 1;
 }
 .${userscriptClass('log')} > * {
     font-size: inherit; font-family: inherit; color: inherit;
