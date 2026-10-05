@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         dogonline keyboard navigation
 // @namespace    amgg
-// @version      0.4.0
+// @version      0.5.0
 // @description  configurable keybinds for the tower in dogonline.net
 // @author       amgg
 // @match        https://dogonline.net/*
@@ -205,8 +205,6 @@ ${Object.entries({ close: '00f', add: '0f0', delete: 'f00' }).map(([kind, hex]) 
 
     const action2buttonSelector = {
         yes: [
-            // confirm quitting
-            { selector: mangle`${'Dialog_overlay'} ${'Button_danger'}`, predicate: predicate.textContent('Leave!') },
             { selector: mangle`${'tower_tuiPlayerRowButtons'} ${'Button_button'}${'Button_primary'}`, predicate: predicate.textContent('Open Chest', 'Drink') },
             { selector: mangle`${'tower_tuiPlayerRowButtons'} ${'Button_button'}${'Button_neutral'}`, predicate: predicate.textContent('Continue') },
             { selector: mangle`${'tower_tuiCutscene'} ${'Button_button'}`, predicate: predicate.textContent('Skip Cutscene') },
@@ -224,10 +222,13 @@ ${Object.entries({ close: '00f', add: '0f0', delete: 'f00' }).map(([kind, hex]) 
             { selector: mangle`${'tower_tuiPlayerRowButtons'} ${'Button_button'}${'Button_neutral'}`, predicate: predicate.textContent('Leave') },
             // cancel quitting
             { selector: mangle`${'Dialog_overlay'} ${'Button_neutral'}`, predicate: predicate.textContent('Cancel') },
-            //
+        ],
+        run: [{ selector: mangle`${'tower_tuiButtonsSection2'} > ${'Button_button'}${'Button_neutral'}`, predicate: predicate.textContent('Run from Battle') }],
+        quit: [
             { selector: mangle`${'tower_tuiButtonsSection2'} > ${'Button_danger'}`, predicate: predicate.textContent('Leave the Tower') },
             { selector: mangle`${'tower_enterTowerBtns'} ${'Button_button'}`, predicate: predicate.textContent('← Back to Icy Cliffs') },
         ],
+        confirmQuit: [{ selector: mangle`${'Dialog_overlay'} ${'Button_danger'}`, predicate: predicate.textContent('Leave!') },],
         up: [mangle`${'tower_dirBtn'}${'tower_btnUp'}`],
         down: [mangle`${'tower_dirBtn'}${'tower_btnDown'}`],
         left: [mangle`${'tower_dirBtn'}${'tower_btnLeft'}`],
@@ -249,8 +250,9 @@ ${Object.entries({ close: '00f', add: '0f0', delete: 'f00' }).map(([kind, hex]) 
         Numpad9: ['action2', 'advance'],
         Numpad1: ['action3', 'advance'],
         Numpad3: ['action4', 'advance'],
-        Numpad5: ['advance', 'yes'],
-        Numpad0: ['no'],
+        Numpad5: ['advance', 'yes', 'confirmQuit'],
+        Numpad0: ['no', 'quit'],
+        NumpadDecimal: ['run', 'advance'],
     };
     const bindings = new storage.Item('keybinds', DEFAULT_BINDINGS);
 
@@ -347,12 +349,11 @@ Each keybind maps a key to one or more actions. If multiple actions are chosen, 
     });
 
 
-
     document.documentElement.addEventListener('keydown', e => {
         if(window.location.pathname !== '/tower') return;
         if(e.altKey || e.ctrlKey || e.metaKey) return;
         // when specific elements focused we don't want to do this stuff
-        if(e.target !== document.body) return;
+        if(e.target.nodeName === 'INPUT' || e.target.nodeName === 'SELECT') return;
 
         log.log(`${e.code} => ${bindings.value[e.code]}`);
         // console.log(e.code, '=>', bindings[e.code]);
