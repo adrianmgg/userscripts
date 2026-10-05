@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         dogonline keyboard navigation
 // @namespace    amgg
-// @version      0.3.0
+// @version      0.4.0
 // @description
 // @author       amgg
 // @match        https://dogonline.net/*
@@ -10,10 +10,63 @@
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_deleteValue
+// @grant        GM_addStyle
 // ==/UserScript==
 
 (function() {
     'use strict';
+
+    const USERSCRIPT_STYLE_PREFIX = 'amgg__dogonlinedotnet__keyboardNav';
+    const userscriptClass = (...s) => [USERSCRIPT_STYLE_PREFIX, ...s].join('__');
+    GM_addStyle(`
+.${userscriptClass()} * {
+    color: #fff;
+    font-family: mono;
+    font-size: 20px;
+}
+
+.${userscriptClass(`menubar`)} {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    z-index: 999
+    background-color: #000;
+    color: #fff;
+}
+
+.${userscriptClass('button')} {
+    border: 1px solid #fff;
+    margin: 2px;
+    min-width: 1em;
+    min-height: 1.5em;
+    padding-inline: 0.25em;
+}
+
+${Object.entries({ close: '00f', add: '0f0', delete: 'f00' }).map(([kind, hex]) => `
+.${userscriptClass('button', kind)} {
+    border-color: #${hex};
+    color: #${hex};
+}`).join('\n')}
+
+.${userscriptClass('log')} {
+	position: fixed;
+	white-space: pre-wrap;
+	font-family: mono;
+	font-size: 0.6rem;
+	top: 0px;
+	right: 0px;
+	width: 40em;
+	height: 20em;
+	background-color: #000;
+	color: #fff;
+	opacity: 0.75;
+	overflow-y: scroll;
+	text-indent: 2em hanging;
+}
+.${userscriptClass('log')} > * {
+    font-size: inherit; font-family: inherit; color: inherit;
+ }
+`);
 
     /* elhelper by amgg. MIT license. via github.com/adrianmgg/elhelper */
     const elhelper=(function(){function setup(elem,{style:{vars:styleVars={},...style}={},attrs={},dataset={},events={},classList=[],children=[],parent=null,insertBefore=null,...props}){for(const k in style){elem.style[k]=style[k]}for(const k in styleVars){elem.style.setProperty(k,styleVars[k])}for(const k in attrs){elem.setAttribute(k,attrs[k])}for(const k in dataset){elem.dataset[k]=dataset[k]}for(const k in events){elem.addEventListener(k,events[k])}for(const c of classList){elem.classList.add(c)}for(const k in props){elem[k]=props[k]}for(const c of children){elem.appendChild(c)}if(parent!==null){if(insertBefore!==null){parent.insertBefore(elem,insertBefore)}else{parent.appendChild(elem)}}return elem}function create(tagName,options={}){return setup(document.createElement(tagName),options)}function createNS(namespace,tagName,options={}){return setup(document.createElementNS(namespace,tagName),options)}return{setup,create,createNS}})();
@@ -36,6 +89,22 @@
                 };
             },
         }),
+        button(textContent, kind, description, click, { events, ...props } = {}) {
+            description ??= textContent;
+            kind ??= 'plain';
+            return elhelper.create('button', {
+                ...props,
+                type: 'button',
+                classList: [userscriptClass('button'), userscriptClass('button', kind)],
+                textContent,
+                title: description,
+                ariaRole: description,
+                events: {
+                    ...events,
+                    click,
+                },
+            });
+        },
     };
 
     const storage = (() => {
@@ -88,28 +157,23 @@
 
     const log = (() => {
         const MAX_LOG_LINES = 200;
-        const elt = elhelper.create('div', {
-            style: {
-                position: 'fixed',
-                whiteSpace: 'pre-wrap',
-                fontFamily: 'mono', fontSize: '.6rem',
-                top: '0px', right: '0px',
-                width: '40em', height: '20em',
-                backgroundColor: '#000', color: '#fff',
-                opacity: 0.75,
-                overflowY: 'scroll',
-                textIndent: '2em', paddingLeft: '-2em', // indent subsequent lines only
-            },
-        });
-        let prevMsg = null; let repeatCount = 1;
+        const elt = elhelper.create('div', { classList: [userscriptClass('log')] });
+        let prevMsg = null; let prevMsgRepeatCountNode = null; let repeatCount = 1;
         function log(msg) {
             console.log(msg);
             if(prevMsg === msg) {
-                elt.lastChild.textContent = `> ${String(prevMsg)} (${++repeatCount})\n`;
+                prevMsgRepeatCountNode.nodeValue = ` (x${++repeatCount})`;
             } else {
                 prevMsg = msg;
                 repeatCount = 1;
-                elt.appendChild(new Text(`> ${String(msg)}\n`));
+                elhelper.create('div', {
+                    parent: elt,
+                    children: [
+                        new Text(msg),
+                        prevMsgRepeatCountNode=new Text(''),
+                    ],
+                });
+                // elt.appendChild(new Text(`> ${String(msg)}\n`));
                 while(elt.childNodes.length > MAX_LOG_LINES) elt.removeChild(elt.firstChild);
             }
             elt.scrollTop = elt.scrollHeight;
@@ -148,10 +212,12 @@
             { selector: mangle`${'tower_tuiCutscene'} ${'Button_button'}`, predicate: predicate.textContent('Skip Cutscene') },
             // start
             mangle`${'tower_enterTowerBtn'}`,
-            // textbox
-            mangle`${'tower_tuiTextbox'} ${'tower_textboxNextArrow'}`,
             //
             { selector: mangle`${'tower_enterTowerBtns'} ${'Button_button'}`, predicate: predicate.textContent('Enter the Tower!') },
+        ],
+        // advance combat
+        advance: [
+            mangle`${'tower_tuiTextbox'} ${'tower_textboxNextArrow'}`,
         ],
         no: [
             // decline fountain for now
@@ -179,11 +245,11 @@
         Numpad2: ['down'],
         Numpad4: ['left'],
         Numpad6: ['right'],
-        Numpad7: ['action1', 'yes'],
-        Numpad9: ['action2', 'yes'],
-        Numpad1: ['action3', 'yes'],
-        Numpad3: ['action4', 'yes'],
-        Numpad5: ['yes'],
+        Numpad7: ['action1', 'advance'],
+        Numpad9: ['action2', 'advance'],
+        Numpad1: ['action3', 'advance'],
+        Numpad3: ['action4', 'advance'],
+        Numpad5: ['advance', 'yes'],
         Numpad0: ['no'],
     };
     const bindings = new storage.Item('keybinds', DEFAULT_BINDINGS);
@@ -225,22 +291,14 @@
                     },
                 })),
                 actionDropdownsBox = ui.simple.td(...actions.map(actionDropdown)),
-                ui.simple.td(elhelper.create('button', {
-                    textContent: '+',
-                    classList: ['Button_button__aJ0V6', 'Button_neutral__3MKB9'],
-                    events: { click() {
-                        actionDropdownsBox.appendChild(actionDropdown(ALL_ACTION_TYPES[0]));
-                        refresh();
-                    } },
+                ui.simple.td(ui.button('+', 'add', 'add another action to this keybind', () => {
+                    actionDropdownsBox.appendChild(actionDropdown(ALL_ACTION_TYPES[0]));
+                    refresh();
                 })),
-                ui.simple.td(elhelper.create('button', {
-                    textContent: '-',
-                    classList: ['Button_button__aJ0V6', 'Button_danger__4QObZ'], // FIXME this'll probably break after some site changes
-                    events: { click() {
-                        if(actionDropdownsBox.childNodes.length >= 2) actionDropdownsBox.removeChild(actionDropdownsBox.lastChild);
-                        else thisKeybindRow.parentElement.removeChild(thisKeybindRow);
-                        refresh();
-                    } },
+                ui.simple.td(ui.button('-', 'delete', 'remove an action from this keybind', () => {
+                    if(actionDropdownsBox.childNodes.length >= 2) actionDropdownsBox.removeChild(actionDropdownsBox.lastChild);
+                    else thisKeybindRow.parentElement.removeChild(thisKeybindRow);
+                    refresh();
                 })),
             );
         }
@@ -252,13 +310,9 @@
                     ([key, actions]) => mkKeybindsRow(key, actions),
                     Object.entries(bindings.value)
                 ),
-                ui.simple.tfoot(ui.simple.tr(elhelper.create('button', {
-                    textContent: '+',
-                    classList: ['Button_button__aJ0V6', 'Button_neutral__3MKB9'],
-                    events: { click() {
-                        keybindsTbody.appendChild(mkKeybindsRow('', [ALL_ACTION_TYPES[0]]));
-                        refresh();
-                    } },
+                ui.simple.tfoot(ui.simple.tr(ui.button('+', 'add', 'add another keybind', () => {
+                    keybindsTbody.appendChild(mkKeybindsRow('', [ALL_ACTION_TYPES[0]]));
+                    refresh();
                 }))),
             ],
         });
@@ -266,13 +320,15 @@
 
     const keybindsModal = elhelper.create('dialog', {
         parent: document.body,
+        classList: [USERSCRIPT_STYLE_PREFIX],
         children: [
-            elhelper.create('button', {
-                textContent: 'x',
-                classList: ['Button_button__aJ0V6', 'Button_neutral__3MKB9'],
-                events: { click() { keybindsModal.close(); } },
-            }),
+            ui.button('x', 'close', 'close', () => { keybindsModal.close(); }),
             keybindsUI(),
+            elhelper.create('div', {
+                textContent: `\
+Each keybind maps a key to one or more actions. If multiple actions are chosen, then the second action is only attempted if the first action wasn't relevant here, then the third, and so on until it reaches an action can be done at which point the remaining actions are ignored.`,
+                style: { width: '30em' },
+            }),
         ],
     });
     function toggleKeybindsMenu() {
@@ -283,25 +339,10 @@
 
     elhelper.create('div', {
         parent: document.body,
-        style: {
-            position: 'absolute',
-            top: '0px', left: '0px',
-            zIndex: 999,
-            backgroundColor: '#000', color: '#fff',
-        },
+        classList: [USERSCRIPT_STYLE_PREFIX, userscriptClass`menubar`],
         children: [
-            elhelper.create('button', {
-                textContent: '\u2699\ufe0e keybinds',
-                events: { click() {
-                    toggleKeybindsMenu();
-                } },
-            }),
-            elhelper.create('button', {
-                textContent: '\u2261 log',
-                events: { click() {
-                    log.toggleVisibility();
-                } },
-            }),
+            ui.button('\u2699\ufe0e keybinds', null, 'open keybinds menu', () => { toggleKeybindsMenu(); }),
+            ui.button('\u2261 log', null, 'toggle log display', () => { log.toggleVisibility(); }),
         ],
     });
 
