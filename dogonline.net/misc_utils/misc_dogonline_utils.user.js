@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         misc dogonline API utils
 // @namespace    amgg
-// @version      0.1.0
-// @description  helpers for scraping data from dogonline
+// @version      0.2.0
+// @description  various small utilities which involve scraping data from dogonline
 // @author       amgg
 // @match        https://dogonline.net/*
 // @icon         https://dogonline.net/favicon.ico
@@ -31,5 +31,24 @@
         const data = await trpcQuery('doghouse.getState', undefined);
         const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
         await GM.download({ url: blob, name: `doghouse-${Date.now()}.json`, saveAs: true });
+    });
+
+    GM_registerMenuCommand('compute net worth', async () => {
+        const fmtCoins = coins => `${coins.toLocaleString('en-US')} coins`;
+
+        const doghouse = await trpcQuery('doghouse.getState', undefined);
+        const doghouseNet = doghouse.inventory.map(item => item.price * item.count).reduce((a, b) => a + b, 0);
+        const cash = doghouse.money;
+
+        const closet = await trpcQuery('dressup.getState', {"dogIndex":1});
+        const closetNet = closet.cosmetics.map(item => item.price * item.count).reduce((a, b) => a + b, 0);
+
+        const totalNet = cash + doghouseNet + closetNet;
+
+        alert(`net worth
+coins: ${fmtCoins(cash)}
+doghouse items: ${fmtCoins(doghouseNet)}
+closet items (excluding worn): ${fmtCoins(closetNet)}
+total: ${fmtCoins(totalNet)}`);
     });
 })();
