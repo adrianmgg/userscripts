@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         dogonline keyboard navigation
 // @namespace    amgg
-// @version      0.5.1
+// @version      0.5.2
 // @description  configurable keybinds for the tower in dogonline.net
 // @author       amgg
 // @match        https://dogonline.net/*
@@ -70,6 +70,18 @@ ${Object.entries({ close: '00f', add: '0f0', delete: 'f00' }).map(([kind, hex]) 
     font-size: inherit; font-family: inherit; color: inherit;
  }
 `);
+
+    function conditionalThrottle(fn, interval, bypassThrottlePredicate) {
+        let lastTrigger = -interval * 2;
+        return function() {
+            const now = performance.now() ?? Date.now();
+            const since = now - lastTrigger;
+            if(since >= interval || bypassThrottlePredicate.apply(this, arguments)) {
+                lastTrigger = now;
+                fn.apply(this, arguments);
+            }
+        }
+    }
 
     /* elhelper by amgg. MIT license. via github.com/adrianmgg/elhelper */
     const elhelper=(function(){function setup(elem,{style:{vars:styleVars={},...style}={},attrs={},dataset={},events={},classList=[],children=[],parent=null,insertBefore=null,...props}){for(const k in style){elem.style[k]=style[k]}for(const k in styleVars){elem.style.setProperty(k,styleVars[k])}for(const k in attrs){elem.setAttribute(k,attrs[k])}for(const k in dataset){elem.dataset[k]=dataset[k]}for(const k in events){elem.addEventListener(k,events[k])}for(const c of classList){elem.classList.add(c)}for(const k in props){elem[k]=props[k]}for(const c of children){elem.appendChild(c)}if(parent!==null){if(insertBefore!==null){parent.insertBefore(elem,insertBefore)}else{parent.appendChild(elem)}}return elem}function create(tagName,options={}){return setup(document.createElement(tagName),options)}function createNS(namespace,tagName,options={}){return setup(document.createElementNS(namespace,tagName),options)}return{setup,create,createNS}})();
@@ -352,7 +364,7 @@ Each keybind maps a key to one or more actions. If multiple actions are chosen, 
     });
 
 
-    document.documentElement.addEventListener('keydown', e => {
+    function handleKeypress(e) {
         if(window.location.pathname !== '/tower') return;
         if(e.altKey || e.ctrlKey || e.metaKey) return;
         // when specific elements focused we don't want to do this stuff
@@ -387,5 +399,7 @@ Each keybind maps a key to one or more actions. If multiple actions are chosen, 
                 e.stopImmediatePropagation();
             }
         }
-    });
+    }
+
+    document.documentElement.addEventListener('keydown', conditionalThrottle(handleKeypress, 100, (e) => !e.repeat));
 })();
