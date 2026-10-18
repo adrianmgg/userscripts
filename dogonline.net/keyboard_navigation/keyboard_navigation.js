@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         dogonline keyboard navigation
 // @namespace    amgg
-// @version      0.5.2
+// @version      0.5.3
 // @description  configurable keybinds for the tower in dogonline.net
 // @author       amgg
 // @match        https://dogonline.net/*
@@ -15,6 +15,8 @@
 
 (function() {
     'use strict';
+
+    if(window.location.pathname === '/toys/maze.html') return;
 
     const USERSCRIPT_STYLE_PREFIX = 'amgg__dogonlinedotnet__keyboardNav';
     const userscriptClass = (...s) => [USERSCRIPT_STYLE_PREFIX, ...s].join('__');
