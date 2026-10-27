@@ -1,0 +1,102 @@
+/* ==UserStyle==
+@name           dogonline.net temple autohint
+@author         amgg
+@namespace      amgg
+@version        1.0.0
+@description    highlights the correct tiles to click in the wall puzzle
+@preprocessor   less
+==/UserStyle== */
+
+
+@lightImageOn: "/img/temple/wall/puzzle_light_on.png";
+@lightImageOff: "/img/temple/wall/puzzle_light_off.png";
+.nthLightIs(@n, @isLit, @props) {
+    @srcUrl: if(@isLit, @lightImageOn, @lightImageOff);
+    &:has(> button:nth-child(@{n}) > img[src=@{srcUrl}]) {
+        @props();
+    }
+}
+
+.firstNLightsAre(@n, @isLit, @props) {
+    @subsequent: @n + 1;
+    @srcUrl: if(@isLit, @lightImageOff, @lightImageOn);
+    &:not(:has(> button:not(:nth-child(n + @{subsequent})) > img[src=@{srcUrl}])) {
+        @props();
+    }
+}
+
+.bottomRowIs(@values, @props) {
+    @size: length(@values);
+    @offset: @size * (@size - 1);
+    .loop(@i) when (@i <= @size) {
+        @currentLight: extract(@values, @i);
+        @sel: ~"[data-x-@{i}=@{currentLight}]";
+        .nthLightIs(@offset + @i, @currentLight, { .loop(@i + 1) });
+    }
+    .loop(@i) when (@i > @size) { @props(); }
+    .loop(1);
+}
+
+.nxnWall(@n, @props) {
+    .TempleGame_container__XDXPB > .WallPuzzle_grid__J2MvF[style="grid-template-columns: repeat(@{n}, auto);"] {
+        @props();
+    }
+}
+
+@selectedLightColor: purple;
+.selectedLight(@yOffset: 0px) {
+    box-shadow: 0px (0px + @yOffset) 5px 5px @selectedLightColor;
+    & when (@yOffset = 0px) {
+        background: @selectedLightColor;
+    }
+}
+.selectNthLight(...) {
+    each(@arguments, {
+        & > button:nth-child(@{value}) {
+            .selectedLight();
+        }
+    });
+}
+
+
+.nextLightChasingTarget(@size, @props) {
+    @firstCellInLastRow: (@size * @size) - @size + 1;
+    // looking at just the lights which aren't in the last row
+    & > button:not(:nth-child(n + @{firstCellInLastRow})) {
+        // find the first light which happens to be off
+        &:nth-child(1 of :has(> img[src=@{lightImageOff}])) {
+            @props();
+        }
+    }
+}
+
+
+@-moz-document url-prefix("https://dogonline.net/temple/wall") {
+    .nxnWall(3, {
+        .nextLightChasingTarget(3, { .selectedLight(@yOffset: 106px); });
+        .firstNLightsAre(3*3-3, true, {
+            .bottomRowIs(~(true, true, false), .selectNthLight(2,3));
+            .bottomRowIs(~(true, false, true), .selectNthLight(1,2,3));
+            .bottomRowIs(~(true, false, false), .selectNthLight(1));
+            .bottomRowIs(~(false, true, true), .selectNthLight(1,2));
+            .bottomRowIs(~(false, true, false), .selectNthLight(1,3));
+            .bottomRowIs(~(false, false, true), .selectNthLight(3));
+            .bottomRowIs(~(false, false, false), .selectNthLight(2));
+        });
+    });
+    .nxnWall(4, {
+        .nextLightChasingTarget(4, { .selectedLight(@yOffset: 106px); });
+    });
+    .nxnWall(5, {
+        .nextLightChasingTarget(5, { .selectedLight(@yOffset: 106px); });
+        .firstNLightsAre(5*5-5, true, {
+            .bottomRowIs(~(true, true, false, false, false), .selectNthLight(4));
+            .bottomRowIs(~(true, false, true, false, true), .selectNthLight(1,4));
+            .bottomRowIs(~(true, false, false, true, false), .selectNthLight(1));
+            .bottomRowIs(~(false, true, true, true, false), .selectNthLight(1,2));
+            .bottomRowIs(~(false, true, false, false, true), .selectNthLight(5));
+            .bottomRowIs(~(false, false, true, false, false), .selectNthLight(3));
+            .bottomRowIs(~(false, false, false, true, true), .selectNthLight(2));
+        });
+    });
+}
