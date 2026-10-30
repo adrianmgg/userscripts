@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         misc dogonline API utils
 // @namespace    amgg
-// @version      0.3.0
+// @version      0.4.0
 // @description  various small utilities which involve scraping data from dogonline
 // @author       amgg
 // @match        https://dogonline.net/*
@@ -42,12 +42,62 @@
             // `items`: ItemTransfer[]
             returnToInventory: (items) => trpcQuery('storage.returnToInventory', undefined, { method: 'POST', headers: { 'content-type': 'application/json' }, body: superjson.stringify({ items }) }),
         },
+        auction: {
+            /*
+            {
+                marketConditions: {
+                    message: string,
+                    id: number,
+                    ziggyImg: string,
+                },
+                userMoney: number,
+                inventory: { id: string, name: string, image: string, count: number, categories: string[],
+                    price: number, // the *adjusted* sale price, not the base API price
+                },
+            }
+            */
+            getState: () => trpcQuery('auction.getState', undefined),
+        },
+        farm: {
+            /*
+            interface FarmState {
+                ui: {
+                    actions: FarmAction[],
+                    renderableTiles: ({
+                        coords: FarmCoord,
+                        layers: ({ image: string })[],
+                        label: string,
+                    })[],
+                },
+                upgradeInfo: {},
+            }
+            type FarmCoord = string; // e.g. "-1,-1" or "2,-1" etc.
+            interface FarmAction = {
+                type: "dig-up" | "harvest" | "expand-farm",
+                title: string,
+                tile: FarmCoord, // expand-farm has a tile of "999,999"
+                hash: string, // typically a 64-character base64 hash. expand farm action has a hash of "expand-farm" tho.
+                image: string,
+            };
+            */
+            getState: () => trpcQuery('farm.getState', undefined),
+            doAction: (hash) => trpcQuery('farm.doAction', undefined, { method: 'POST', headers: { 'content-type': 'application/json' }, body: superjson.stringify({ hash }) }),
+        },
     };
 
-    GM_registerMenuCommand('dump doghouse JSON', async () => {
-        const data = await API.doghouse.getState();
+    async function downloadJSON(name, data) {
         const blob = new Blob([JSON.stringify(data, null, "  ")], { type: 'application/json' });
-        await GM.download({ url: blob, name: `doghouse-${Date.now()}.json`, saveAs: true });
+        await GM.download({ url: blob, name: `${name}-${Date.now()}.json`, saveAs: true });
+    }
+
+    GM_registerMenuCommand('dump doghouse JSON', async () => {
+        await downloadJSON('doghouse', await API.doghouse.getState());
+    });
+    GM_registerMenuCommand('dump auction house JSON', async () => {
+        await downloadJSON('auction', await API.auction.getState());
+    });
+    GM_registerMenuCommand('dump farm JSON', async () => {
+        await downloadJSON('farm', await API.farm.getState());
     });
 
     GM_registerMenuCommand('compute net worth', async () => {
