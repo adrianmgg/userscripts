@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         misc dogonline API utils
 // @namespace    amgg
-// @version      0.4.0
+// @version      2026-11-01
 // @description  various small utilities which involve scraping data from dogonline
 // @author       amgg
 // @match        https://dogonline.net/*
@@ -83,6 +83,25 @@
             getState: () => trpcQuery('farm.getState', undefined),
             doAction: (hash) => trpcQuery('farm.doAction', undefined, { method: 'POST', headers: { 'content-type': 'application/json' }, body: superjson.stringify({ hash }) }),
         },
+        /*
+        type StarletInfo = { itemId: string, name: string, image: string };
+        type StarletWithQuantity = StarletInfo & { qty: number };
+        */
+        moth: {
+            /* {
+                creatures: ({
+                    id: string, name: string, image: string,
+                    count: number,
+                    rewardPerUnit: StarletWithQuantity[],
+                })[],
+            } */
+            getExchangeState: () => trpcQuery('moth.getExchangeState', undefined),
+            /* {
+                petpets: ({ shopItemId: number, id: string, name: string, description: string, image: string, cost: StarletWithQuantity[] })[],
+                userStarlets: StarletWithQuantity[],
+            } */
+            getPetpetShopState: () => trpcQuery('moth.getPetpetShopState', undefined),
+        },
     };
 
     async function downloadJSON(name, data) {
@@ -117,6 +136,30 @@ coins: ${fmtCoins(cash)}
 doghouse items: ${fmtCoins(doghouseNet)}
 closet items (excluding worn): ${fmtCoins(closetNet)}
 total: ${fmtCoins(totalNet)}`);
+    });
+
+    GM_registerMenuCommand('calculate starlets earned if all creatures sold', async () => {
+        const petpetShopState = await API.moth.getPetpetShopState();
+        const exchangeState = await API.moth.getExchangeState();
+
+        const starletId_to_displayName = Object.fromEntries(petpetShopState.userStarlets.map(({itemId, name}) => [itemId, name]))
+
+        const alreadyOwned = Object.fromEntries(petpetShopState.userStarlets.map(({itemId, qty}) => [itemId, qty]));
+        const wouldGain = exchangeState.creatures
+        .flatMap(creature => creature.rewardPerUnit.map(reward => ({itemId: reward.itemId, qty: reward.qty * creature.count})))
+        .reduce((acc, {itemId, qty}) => {
+            acc[itemId] ??= 0;
+            acc[itemId] += qty;
+            return acc;
+        }, {});
+
+        const msg = Object.keys(alreadyOwned).map(id => {
+            const already = alreadyOwned[id];
+            const gained = wouldGain[id] ?? 0;
+            const total = already + gained;
+            return `${starletId_to_displayName[id]}: +${gained} (${total} total)`;
+        }).join('\n');
+        alert(msg);
     });
 
     GM_registerMenuCommand('store all items', async () => {
