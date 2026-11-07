@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         dogonline keyboard navigation
 // @namespace    amgg
-// @version      0.5.3
+// @version      0.5.4
 // @description  configurable keybinds for the tower in dogonline.net
 // @author       amgg
 // @match        https://dogonline.net/*
@@ -20,9 +20,15 @@
 
     const USERSCRIPT_STYLE_PREFIX = 'amgg__dogonlinedotnet__keyboardNav';
     const userscriptClass = (...s) => [USERSCRIPT_STYLE_PREFIX, ...s].join('__');
+    function lightdark(prop, light, dark) {
+        const parts = [];
+        if(light !== null) parts.push(`${prop}: ${light};`);
+        if(dark !== null) parts.push(`[data-theme="dark"] & { ${prop}: ${dark}; }`);
+        return parts.join('\n    ');
+    }
     GM_addStyle(`
 .${userscriptClass()} * {
-    color: #fff;
+    ${lightdark('color', '#000', '#fff')}
     font-family: mono;
     font-size: 20px;
 }
@@ -31,23 +37,25 @@
     position: fixed;
     top: 0px;
     left: 0px;
-    z-index: 999
-    background-color: #000;
-    color: #fff;
+    z-index: 999;
+    ${lightdark('color', '#000', '#fff')}
 }
 
 .${userscriptClass('button')} {
-    border: 1px solid #fff;
+    border: 1px solid;
+    ${lightdark('border-color', '#000', '#fff')}
+    ${lightdark('background-color', '#fff', '#000')}
     margin: 2px;
     min-width: 1em;
     min-height: 1.5em;
     padding-inline: 0.25em;
 }
 
-${Object.entries({ close: '00f', add: '0f0', delete: 'f00' }).map(([kind, hex]) => `
+${Object.entries({ close: '0ff', add: '0f0', delete: 'f00' }).map(([kind, hex]) => `
 .${userscriptClass('button', kind)} {
-    border-color: #${hex};
-    color: #${hex};
+    ${lightdark('border-color', null, `#${hex}`)}
+    ${lightdark('color', null, `#${hex}`)}
+    ${lightdark('background-color', `#${hex}`, null)}
 }`).join('\n')}
 
 .${userscriptClass('log')} {
@@ -59,8 +67,8 @@ ${Object.entries({ close: '00f', add: '0f0', delete: 'f00' }).map(([kind, hex]) 
 	right: 0px;
 	width: 40em;
 	height: 20em;
-	background-color: #000;
-	color: #fff;
+	${lightdark('background-color', '#fff', '#000')}
+	${lightdark('color', '#000', '#fff')}
 	opacity: 0.75;
 	overflow-y: scroll;
 	text-indent: 2em hanging;
